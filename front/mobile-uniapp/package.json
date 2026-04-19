@@ -1,0 +1,9 @@
+{
+  "name": "student-behavior-mobile-uniapp",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev:h5": "uni",
+    "build:h5": "uni build -p h5"
+  }
+}

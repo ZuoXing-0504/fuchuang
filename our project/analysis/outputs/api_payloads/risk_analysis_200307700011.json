@@ -1,0 +1,84 @@
+{
+  "page": "risk_analysis",
+  "thresholds": {
+    "low_upper": 0.06218,
+    "medium_upper": 0.131733
+  },
+  "level_distribution": [
+    {
+      "risk_level": "低风险",
+      "count": 825,
+      "ratio": 0.33
+    },
+    {
+      "risk_level": "中风险",
+      "count": 850,
+      "ratio": 0.34
+    },
+    {
+      "risk_level": "高风险",
+      "count": 825,
+      "ratio": 0.33
+    }
+  ],
+  "risk_dimensions": [
+    {
+      "dimension": "学习投入风险",
+      "description": "由学习指数、学习时长和图书馆活跃度共同反映。"
+    },
+    {
+      "dimension": "行为规律风险",
+      "description": "由自律指数和夜间上网比例共同反映。"
+    },
+    {
+      "dimension": "健康发展风险",
+      "description": "由健康指数和综合发展指数共同反映。"
+    }
+  ],
+  "focus_student": {
+    "student_id": "200307700011",
+    "college": "计算机科学与技术学院",
+    "major": "数据科学与大数据技术",
+    "risk_result": {
+      "risk_prob": 0.0366,
+      "risk_label": 1,
+      "risk_level": "低风险",
+      "risk_thresholds": {
+        "low_upper": 0.06218,
+        "medium_upper": 0.131733
+      },
+      "cluster": 1,
+      "cluster_label": "低投入风险型",
+      "risk_dimensions": [
+        {
+          "dimension": "学习投入风险",
+          "status": "表现偏弱",
+          "indicators": [
+            "study_index",
+            "study_time",
+            "library_count"
+          ],
+          "summary": "结合学习指数、学习时长和图书馆活跃度判断学习投入是否充足。"
+        },
+        {
+          "dimension": "行为规律风险",
+          "status": "风险较低",
+          "indicators": [
+            "self_discipline_index",
+            "night_net_ratio"
+          ],
+          "summary": "结合自律指数和夜间上网比例判断行为规律性是否稳定。"
+        },
+        {
+          "dimension": "健康发展风险",
+          "status": "表现偏弱",
+          "indicators": [
+            "health_index",
+            "development_index"
+          ],
+          "summary": "结合健康指数和综合发展指数判断身心状态与整体成长表现。"
+        }
+      ]
+    }
+  }
+}

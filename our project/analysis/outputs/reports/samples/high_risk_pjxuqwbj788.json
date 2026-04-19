@@ -1,0 +1,177 @@
+{
+  "basic_info": {
+    "student_id": "pjxuqwbj788",
+    "name": "",
+    "college": "机电工程学院",
+    "major": "机械设计制造及其自动化"
+  },
+  "individual_profile": {
+    "metrics": {
+      "study_time": 67753.0,
+      "library_count": 0.0,
+      "night_net_ratio": 0.0,
+      "study_index": 13.4401,
+      "self_discipline_index": 167.6,
+      "health_index": 83.2867,
+      "development_index": 42.3503,
+      "risk_prob": 0.1985
+    },
+    "radar_data": [
+      {
+        "indicator": "学习投入",
+        "column": "study_index",
+        "value": 55.24
+      },
+      {
+        "indicator": "自律水平",
+        "column": "self_discipline_index",
+        "value": 80.48
+      },
+      {
+        "indicator": "健康发展",
+        "column": "health_index",
+        "value": 87.56
+      },
+      {
+        "indicator": "综合发展",
+        "column": "development_index",
+        "value": 90.48
+      },
+      {
+        "indicator": "风险反向值",
+        "column": "risk_prob",
+        "value": 16.52
+      }
+    ],
+    "comparisons": {
+      "overall_mean": {
+        "study_time": 334422.4432,
+        "library_count": 82.1976,
+        "night_net_ratio": 0.0205,
+        "study_index": 111.4192,
+        "self_discipline_index": 146.8886,
+        "health_index": 73.0983,
+        "development_index": 30.9196,
+        "risk_prob": 0.1128
+      },
+      "cluster_mean": {
+        "study_time": 222363.0493,
+        "library_count": 58.4642,
+        "night_net_ratio": 0.0213,
+        "study_index": 82.7608,
+        "self_discipline_index": 143.4204,
+        "health_index": 74.0954,
+        "development_index": 30.6152,
+        "risk_prob": 0.1197
+      },
+      "percentile_rank": {
+        "study_index": 55.24,
+        "self_discipline_index": 80.48,
+        "health_index": 87.56,
+        "development_index": 90.48,
+        "study_time": 50.68,
+        "library_count": 80.88,
+        "night_net_ratio": 100.0,
+        "risk_prob": 16.52
+      }
+    }
+  },
+  "group_profile": {
+    "cluster": 0,
+    "cluster_label": "发展过渡型",
+    "cluster_traits": [
+      "学习投入较低",
+      "图书馆活跃度较低"
+    ],
+    "cluster_means": {
+      "study_time": 222363.0493,
+      "library_count": 58.4642,
+      "night_net_ratio": 0.0213,
+      "study_index": 82.7608,
+      "self_discipline_index": 143.4204,
+      "health_index": 74.0954,
+      "development_index": 30.6152,
+      "risk_prob": 0.1197
+    },
+    "cluster_distribution": [
+      {
+        "cluster": 0,
+        "label": "发展过渡型",
+        "count": 1299,
+        "ratio": 0.5196
+      },
+      {
+        "cluster": 1,
+        "label": "低投入风险型",
+        "count": 60,
+        "ratio": 0.024
+      },
+      {
+        "cluster": 2,
+        "label": "夜间波动型",
+        "count": 41,
+        "ratio": 0.0164
+      },
+      {
+        "cluster": 3,
+        "label": "高投入稳健型",
+        "count": 1100,
+        "ratio": 0.44
+      }
+    ]
+  },
+  "risk_result": {
+    "risk_prob": 0.1985,
+    "risk_label": 0,
+    "risk_level": "高风险",
+    "risk_thresholds": {
+      "low_upper": 0.06218,
+      "medium_upper": 0.131733
+    },
+    "cluster": 0,
+    "cluster_label": "发展过渡型",
+    "risk_dimensions": [
+      {
+        "dimension": "学习投入风险",
+        "status": "表现偏弱",
+        "indicators": [
+          "study_index",
+          "study_time",
+          "library_count"
+        ],
+        "summary": "结合学习指数、学习时长和图书馆活跃度判断学习投入是否充足。"
+      },
+      {
+        "dimension": "行为规律风险",
+        "status": "风险较低",
+        "indicators": [
+          "self_discipline_index",
+          "night_net_ratio"
+        ],
+        "summary": "结合自律指数和夜间上网比例判断行为规律性是否稳定。"
+      },
+      {
+        "dimension": "健康发展风险",
+        "status": "表现较好",
+        "indicators": [
+          "health_index",
+          "development_index"
+        ],
+        "summary": "结合健康指数和综合发展指数判断身心状态与整体成长表现。"
+      }
+    ]
+  },
+  "explanations": [
+    "风险概率处于样本中的较高区间，建议优先关注近期行为波动和学业节奏。",
+    "该学生在学习投入维度低于总体均值，是需要优先补强的信号。",
+    "该学生在行为规律与自律维度表现较好，日常节奏相对稳定。",
+    "该学生在健康发展维度高于总体均值，运动与身体状态相对较好。",
+    "该学生在综合发展维度表现较好，整体成长性较强。",
+    "该学生当前属于“发展过渡型”群体，该群体的典型特征包括：学习投入较低、图书馆活跃度较低。"
+  ],
+  "suggestions": [
+    "建议辅导员或班主任将其纳入近期重点关注名单，结合阶段成绩和日常行为做连续观察。",
+    "建议围绕课堂学习、线上学习和固定自习场景建立更稳定的学习投入计划。",
+    "建议增加图书馆或固定自习场景打卡频率，提升线下学习稳定性。"
+  ]
+}

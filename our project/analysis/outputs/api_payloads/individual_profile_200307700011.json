@@ -1,0 +1,88 @@
+{
+  "page": "individual_profile",
+  "basic_info": {
+    "student_id": "200307700011",
+    "name": "",
+    "college": "计算机科学与技术学院",
+    "major": "数据科学与大数据技术"
+  },
+  "radar_profile": [
+    {
+      "indicator": "学习投入",
+      "column": "study_index",
+      "value": 1.24
+    },
+    {
+      "indicator": "自律水平",
+      "column": "self_discipline_index",
+      "value": 1.76
+    },
+    {
+      "indicator": "健康发展",
+      "column": "health_index",
+      "value": 1.28
+    },
+    {
+      "indicator": "综合发展",
+      "column": "development_index",
+      "value": 0.04
+    },
+    {
+      "indicator": "风险反向值",
+      "column": "risk_prob",
+      "value": 74.12
+    }
+  ],
+  "metric_snapshot": {
+    "study_time": 8998.0,
+    "library_count": 2.0,
+    "night_net_ratio": 0.0,
+    "study_index": 6.71,
+    "self_discipline_index": 0.5,
+    "health_index": 0.0,
+    "development_index": 0.0,
+    "risk_prob": 0.0366
+  },
+  "comparison": {
+    "overall_mean": {
+      "study_time": 334422.4432,
+      "library_count": 82.1976,
+      "night_net_ratio": 0.0205,
+      "study_index": 111.4192,
+      "self_discipline_index": 146.8886,
+      "health_index": 73.0983,
+      "development_index": 30.9196,
+      "risk_prob": 0.1128
+    },
+    "cluster_mean": {
+      "study_time": 2496.4667,
+      "library_count": 0.0333,
+      "night_net_ratio": 0.0,
+      "study_index": 7.5316,
+      "self_discipline_index": 0.8183,
+      "health_index": 0.515,
+      "development_index": 19.7887,
+      "risk_prob": 0.003
+    },
+    "percentile_rank": {
+      "study_index": 1.24,
+      "self_discipline_index": 1.76,
+      "health_index": 1.28,
+      "development_index": 0.04,
+      "study_time": 7.16,
+      "library_count": 80.92,
+      "night_net_ratio": 100.0,
+      "risk_prob": 74.12
+    }
+  },
+  "cluster_profile": {
+    "cluster": 1,
+    "cluster_label": "低投入风险型",
+    "cluster_traits": [
+      "学习投入较低",
+      "自律水平较低",
+      "图书馆活跃度较低",
+      "健康发展较弱"
+    ]
+  }
+}

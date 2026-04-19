@@ -1,0 +1,143 @@
+{
+  "page": "group_profile",
+  "overview": {
+    "total_students": 2500,
+    "cluster_count": 4
+  },
+  "cluster_label_map": {
+    "3": "高投入稳健型",
+    "2": "夜间波动型",
+    "1": "低投入风险型",
+    "0": "发展过渡型"
+  },
+  "cluster_distribution": [
+    {
+      "cluster": 0,
+      "label": "发展过渡型",
+      "count": 1299,
+      "ratio": 0.5196
+    },
+    {
+      "cluster": 1,
+      "label": "低投入风险型",
+      "count": 60,
+      "ratio": 0.024
+    },
+    {
+      "cluster": 2,
+      "label": "夜间波动型",
+      "count": 41,
+      "ratio": 0.0164
+    },
+    {
+      "cluster": 3,
+      "label": "高投入稳健型",
+      "count": 1100,
+      "ratio": 0.44
+    }
+  ],
+  "cluster_cards": [
+    {
+      "cluster": 0,
+      "cluster_label": "发展过渡型",
+      "count": 1299,
+      "ratio": 0.5196,
+      "traits": [
+        "学习投入较低",
+        "图书馆活跃度较低"
+      ],
+      "means": {
+        "study_time": 222363.0493,
+        "library_count": 58.4642,
+        "night_net_ratio": 0.0213,
+        "study_index": 82.7608,
+        "self_discipline_index": 143.4204,
+        "health_index": 74.0954,
+        "development_index": 30.6152,
+        "risk_prob": 0.1197
+      },
+      "risk_ratio": 0.7098
+    },
+    {
+      "cluster": 1,
+      "cluster_label": "低投入风险型",
+      "count": 60,
+      "ratio": 0.024,
+      "traits": [
+        "学习投入较低",
+        "自律水平较低",
+        "图书馆活跃度较低",
+        "健康发展较弱"
+      ],
+      "means": {
+        "study_time": 2496.4667,
+        "library_count": 0.0333,
+        "night_net_ratio": 0.0,
+        "study_index": 7.5316,
+        "self_discipline_index": 0.8183,
+        "health_index": 0.515,
+        "development_index": 19.7887,
+        "risk_prob": 0.003
+      },
+      "risk_ratio": 1.0
+    },
+    {
+      "cluster": 2,
+      "cluster_label": "夜间波动型",
+      "count": 41,
+      "ratio": 0.0164,
+      "traits": [
+        "学习投入较低",
+        "自律水平较低",
+        "图书馆活跃度较低",
+        "夜间上网占比较高"
+      ],
+      "means": {
+        "study_time": 121770.439,
+        "library_count": 6.9512,
+        "night_net_ratio": 0.047,
+        "study_index": 21.1537,
+        "self_discipline_index": 111.3317,
+        "health_index": 67.5807,
+        "development_index": 29.8204,
+        "risk_prob": 0.1374
+      },
+      "risk_ratio": 0.561
+    },
+    {
+      "cluster": 3,
+      "cluster_label": "高投入稳健型",
+      "count": 1100,
+      "ratio": 0.44,
+      "traits": [
+        "学习投入较高",
+        "图书馆活跃度较高"
+      ],
+      "means": {
+        "study_time": 492785.5736,
+        "library_count": 117.5109,
+        "night_net_ratio": 0.0196,
+        "study_index": 154.2932,
+        "self_discipline_index": 160.277,
+        "health_index": 76.0857,
+        "development_index": 31.9272,
+        "risk_prob": 0.1097
+      },
+      "risk_ratio": 0.4855
+    }
+  ],
+  "overall_means": {
+    "study_time": 334422.4432,
+    "library_count": 82.1976,
+    "night_net_ratio": 0.0205,
+    "study_index": 111.4192,
+    "self_discipline_index": 146.8886,
+    "health_index": 73.0983,
+    "development_index": 30.9196,
+    "risk_prob": 0.1128
+  },
+  "risk_distribution": {
+    "high_risk_count": 1539,
+    "high_risk_ratio": 0.6156
+  }
+}

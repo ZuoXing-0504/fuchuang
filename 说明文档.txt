@@ -1,0 +1,726 @@
+学生行为分析系统后端开发详细方案
+一、文档目标
+本方案面向“学生行为分析与风险预警平台”的后端系统开发，目标是形成一套可以支撑：
+- 学校管理员端
+- 学生端
+- 网页端
+- 安卓端
+的统一后端服务体系。
+后端不仅要支持模型调用，还要支持：
+- 用户登录与权限控制
+- 学生基础信息管理
+- 学生特征管理
+- 模型预测结果存储
+- 个性化报告生成
+- 群体画像展示
+- 风险学生预警
+- 批量预测与导出
+换句话说，后端不是“模型脚本接口化”这么简单，而是整个平台的数据中枢和服务中枢。
+二、后端总体职责
+后端需要承担以下职责：
+1. 用户与权限管理
+系统存在至少两类角色：
+- 学校管理员
+- 学生
+如果做更完整，可以细分成：
+- 学校级管理员
+- 学院级管理员
+- 学生
+后端必须保证：
+- 学生只能看自己的数据
+- 学院管理员只能看自己学院的数据
+- 学校管理员可以看全校数据
+2. 数据管理
+负责统一管理以下数据：
+- 学生基础信息
+- 学生特征数据
+第 1 页
+- 预测结果数据
+- 学生个性化报告
+- 群体画像结果
+- 模型指标数据
+3. 模型加载与预测
+后端不训练模型，只负责：
+- 加载导出的模型文件
+- 对齐特征
+- 类别映射
+- 执行预测
+- 返回结果
+4. 报告与建议生成
+后端需要把模型结果转化为：
+- 风险解释
+- 学业解释
+- 群体画像解释
+- 干预建议
+- 个性化报告
+5. 统一 API 服务
+为网页端和安卓端提供统一接口。
+6. 批量任务支持
+后端要支持：
+- 批量预测
+- 风险名单导出
+- 学生报告导出
+- 后续批量导入
+7. 日志与错误处理
+后端要记录：
+- 登录失败
+- 数据缺失
+- 模型调用失败
+- 数据库错误
+- 导出失败
+三、推荐技术栈
+推荐技术栈如下：
+- Web 框架：FastAPI
+- 数据库：MySQL
+- ORM：SQLAlchemy
+- 数据校验：Pydantic
+第 2 页
+第 3 页
+- 模型加载：joblib
+- 数据处理：pandas、numpy
+- 服务启动：uvicorn
+技术选型原因：
+FastAPI：适合做接口型项目，开发快，自带 Swagger 文档，适合比赛系统。
+MySQL：适合多表关联与权限管理，评委也更容易接受。
+SQLAlchemy：比直接拼 SQL 更清晰，便于后期维护。
+Pydantic：和 FastAPI 原生兼容，适合定义输入输出结构。
+joblib：适合加载 sklearn 模型、预处理器和聚类模型。
+四、推荐项目目录结构
+建议后端从一开始就按模块拆分，目录如下：
+代码：项目目录结构
+backend/
+■■■ app/
+■ ■■■ main.py
+■ ■■■ core/
+■ ■ ■■■ config.py
+■ ■ ■■■ database.py
+■ ■ ■■■ security.py
+■ ■■■ models/
+■ ■ ■■■ user.py
+■ ■ ■■■ student.py
+■ ■ ■■■ feature.py
+■ ■ ■■■ prediction.py
+■ ■ ■■■ report.py
+■ ■■■ schemas/
+■ ■ ■■■ auth.py
+■ ■ ■■■ admin.py
+■ ■ ■■■ student.py
+■ ■ ■■■ prediction.py
+■ ■ ■■■ report.py
+■ ■■■ crud/
+■ ■ ■■■ user.py
+■ ■ ■■■ student.py
+■ ■ ■■■ prediction.py
+■ ■ ■■■ report.py
+■ ■■■ services/
+■ ■ ■■■ model_loader.py
+■ ■ ■■■ feature_service.py
+■ ■ ■■■ prediction_service.py
+■ ■ ■■■ report_service.py
+■ ■ ■■■ dashboard_service.py
+■ ■ ■■■ advice_service.py
+■ ■■■ routers/
+■ ■ ■■■ auth.py
+■ ■ ■■■ admin_dashboard.py
+■ ■ ■■■ admin_student.py
+■ ■ ■■■ admin_model.py
+■ ■ ■■■ student_portal.py
+■ ■ ■■■ batch_predict.py
+■ ■■■ utils/
+■ ■■■ response.py
+■ ■■■ logger.py
+■ ■■■ file_utils.py
+■■■ ml/
+ ■■■ saved_models/
+五、数据库设计
+数据库建议至少设计 6 张核心表。
+5.1 用户表 users
+作用：管理系统登录用户和角色。
+代码：users 建表 SQL
+CREATE TABLE users (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ username VARCHAR(100) NOT NULL UNIQUE,
+ password_hash VARCHAR(255) NOT NULL,
+ role VARCHAR(20) NOT NULL,
+ student_id VARCHAR(50) NULL,
+ college VARCHAR(100) NULL,
+ is_active TINYINT DEFAULT 1,
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+5.2 学生基础信息表 student_basic_info
+作用：存放稳定的学生信息，用于详情展示和权限控制。
+代码：student_basic_info 建表 SQL
+CREATE TABLE student_basic_info (
+ student_id VARCHAR(50) PRIMARY KEY,
+ name VARCHAR(100),
+ gender VARCHAR(20),
+ nation VARCHAR(50),
+ politics_status VARCHAR(50),
+ birth_date VARCHAR(50),
+ native_place VARCHAR(100),
+ college VARCHAR(100),
+ major VARCHAR(100)
+);
+5.3 学生特征表 student_features
+作用：存储模型预测常用特征。
+设计思路：
+- 高频展示字段单独列出
+- 全量特征存入 feature_json
+代码：student_features 建表 SQL
+CREATE TABLE student_features (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ student_id VARCHAR(50) NOT NULL,
+ internet_time FLOAT DEFAULT 0,
+ library_count FLOAT DEFAULT 0,
+ running_count FLOAT DEFAULT 0,
+ exercise_count FLOAT DEFAULT 0,
+ fitness_score FLOAT DEFAULT 0,
+ english_score FLOAT DEFAULT 0,
+ overall_score FLOAT DEFAULT 0,
+ learning_index FLOAT DEFAULT 0,
+ self_discipline_index FLOAT DEFAULT 0,
+ health_index FLOAT DEFAULT 0,
+ risk_index FLOAT DEFAULT 0,
+ social_index FLOAT DEFAULT 0,
+ academic_potential_index FLOAT DEFAULT 0,
+第 4 页
+ life_regularity_index FLOAT DEFAULT 0,
+ online_engagement_index FLOAT DEFAULT 0,
+ homework_execution_index FLOAT DEFAULT 0,
+ online_learning_quality_index FLOAT DEFAULT 0,
+ comprehensive_development_index FLOAT DEFAULT 0,
+ feature_json JSON,
+ updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (student_id) REFERENCES student_basic_info(student_id)
+);
+5.4 预测结果表 student_predictions
+作用：存储模型输出结果。
+代码：student_predictions 建表 SQL
+CREATE TABLE student_predictions (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ student_id VARCHAR(50) NOT NULL,
+ risk_prob FLOAT DEFAULT 0,
+ risk_level VARCHAR(20),
+ performance_label VARCHAR(20),
+ scholarship_prob FLOAT DEFAULT 0,
+ health_label VARCHAR(20),
+ change_trend VARCHAR(20),
+ score_pred FLOAT DEFAULT 0,
+ cluster_id INT,
+ cluster_name VARCHAR(100),
+ updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (student_id) REFERENCES student_basic_info(student_id)
+);
+5.5 报告表 student_reports
+作用：存放生成好的个性化报告。
+代码：student_reports 建表 SQL
+CREATE TABLE student_reports (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ student_id VARCHAR(50) NOT NULL,
+ summary_text TEXT,
+ risk_analysis TEXT,
+ performance_analysis TEXT,
+ scholarship_analysis TEXT,
+ health_analysis TEXT,
+ group_profile_text TEXT,
+ advice_text TEXT,
+ report_json JSON,
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (student_id) REFERENCES student_basic_info(student_id)
+);
+5.6 模型指标表 model_metrics
+作用：给前端模型分析页直接读取。
+代码：model_metrics 建表 SQL
+CREATE TABLE model_metrics (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ model_key VARCHAR(100) NOT NULL,
+ model_name VARCHAR(100) NOT NULL,
+ auc FLOAT NULL,
+ accuracy FLOAT NULL,
+ f1 FLOAT NULL,
+ macro_auc FLOAT NULL,
+ macro_f1 FLOAT NULL,
+第 5 页
+ r2 FLOAT NULL,
+ mae FLOAT NULL,
+ rmse FLOAT NULL,
+ updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+5.7 可选：干预记录表 intervention_records
+作用：给管理员记录后续跟踪动作。
+代码：intervention_records 建表 SQL
+CREATE TABLE intervention_records (
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ student_id VARCHAR(50) NOT NULL,
+ intervention_type VARCHAR(50),
+ note_text TEXT,
+ created_by VARCHAR(100),
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+六、数据库连接与 ORM 基础代码
+下面是最基础、最关键的数据库连接和 ORM 定义示例。
+6.1 数据库连接文件 database.py
+代码：database.py
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+DATABASE_URL = "mysql+pymysql://root:123456@127.0.0.1:3306/student_behavior"
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+Base = declarative_base()
+6.2 学生与特征 ORM 示例
+代码：student.py / feature.py 示例
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON
+from sqlalchemy.sql import func
+from app.core.database import Base
+class StudentBasicInfo(Base):
+ __tablename__ = "student_basic_info"
+ student_id = Column(String(50), primary_key=True)
+ name = Column(String(100))
+ gender = Column(String(20))
+ nation = Column(String(50))
+ politics_status = Column(String(50))
+ birth_date = Column(String(50))
+ native_place = Column(String(100))
+ college = Column(String(100))
+ major = Column(String(100))
+class StudentFeature(Base):
+ __tablename__ = "student_features"
+ id = Column(Integer, primary_key=True, autoincrement=True)
+ student_id = Column(String(50), ForeignKey("student_basic_info.student_id"))
+ internet_time = Column(Float, default=0)
+ library_count = Column(Float, default=0)
+第 6 页
+ running_count = Column(Float, default=0)
+ exercise_count = Column(Float, default=0)
+ fitness_score = Column(Float, default=0)
+ english_score = Column(Float, default=0)
+ overall_score = Column(Float, default=0)
+ learning_index = Column(Float, default=0)
+ self_discipline_index = Column(Float, default=0)
+ health_index = Column(Float, default=0)
+ risk_index = Column(Float, default=0)
+ social_index = Column(Float, default=0)
+ academic_potential_index = Column(Float, default=0)
+ life_regularity_index = Column(Float, default=0)
+ online_engagement_index = Column(Float, default=0)
+ homework_execution_index = Column(Float, default=0)
+ online_learning_quality_index = Column(Float, default=0)
+ comprehensive_development_index = Column(Float, default=0)
+ feature_json = Column(JSON)
+ updated_at = Column(DateTime, server_default=func.now())
+七、模型接入方式
+后端不训练模型，只负责：
+- 加载模型
+- 对齐特征
+- 做类别映射
+- 调用预测
+7.1 模型加载器 model_loader.py
+代码：model_loader.py
+import os
+import json
+import joblib
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MODEL_DIR = os.path.join(BASE_DIR, "ml", "saved_models")
+class ModelRegistry:
+ def __init__(self):
+ self.models = {}
+ self.feature_schema = {}
+ self.category_schema = {}
+ self.cluster_name_map = {}
+ def load_all(self):
+ self.models["risk"] = joblib.load(os.path.join(MODEL_DIR, "risk_model.joblib"))
+ self.models["scholarship"] = joblib.load(os.path.join(MODEL_DIR, "scholarship_model.joblib"))
+ self.models["performance"] = joblib.load(os.path.join(MODEL_DIR, "performance_model.joblib"))
+ self.models["health"] = joblib.load(os.path.join(MODEL_DIR, "health_model.joblib"))
+ self.models["change_trend"] = joblib.load(os.path.join(MODEL_DIR, "change_trend_model.joblib"))
+ self.models["score_regression"] = joblib.load(os.path.join(MODEL_DIR, "score_regression_model.joblib"))
+ self.models["cluster"] = joblib.load(os.path.join(MODEL_DIR, "cluster_model.joblib"))
+ with open(os.path.join(MODEL_DIR, "feature_schema.json"), "r", encoding="utf-8") as f:
+ self.feature_schema = json.load(f)
+ with open(os.path.join(MODEL_DIR, "category_schema.json"), "r", encoding="utf-8") as f:
+ self.category_schema = json.load(f)
+ with open(os.path.join(MODEL_DIR, "cluster_name_map.json"), "r", encoding="utf-8") as f:
+ self.cluster_name_map = json.load(f)
+model_registry = ModelRegistry()
+7.2 特征对齐服务 feature_service.py
+第 7 页
+代码：feature_service.py
+import pandas as pd
+import numpy as np
+LONG_TAIL_COLS = [
+ "■■■■", "■■■■■■", "■■■■", "■■■■", "■■■■■",
+ "■■■■■■", "■■■■■", "■■■■■", "■■■■",
+ "■■■■■■", "■■■■■■", "■■■", "■■■", "■■■■", "■■■■"
+]
+def apply_category_mapping(df: pd.DataFrame, category_mappings: dict):
+ df = df.copy()
+ for col, mapping in category_mappings.items():
+ if col in df.columns:
+ df[col] = df[col].astype(str).map(mapping).fillna(-1).astype(int)
+ return df
+def align_features(input_dict: dict, feature_columns: list, category_mappings: dict | None = None):
+ df = pd.DataFrame([input_dict])
+ for col in feature_columns:
+ if col not in df.columns:
+ df[col] = 0
+ df = df[feature_columns].copy()
+ if category_mappings:
+ df = apply_category_mapping(df, category_mappings)
+ for c in [x for x in LONG_TAIL_COLS if x in df.columns]:
+ df[c] = np.log1p(pd.to_numeric(df[c], errors="coerce").fillna(0).clip(lower=0))
+ for c in df.columns:
+ df[c] = pd.to_numeric(df[c], errors="coerce")
+ num_cols = df.select_dtypes(include=[np.number]).columns
+ df[num_cols] = df[num_cols].replace([np.inf, -np.inf], np.nan)
+ df[num_cols] = df[num_cols].fillna(0)
+ return df
+7.3 统一预测服务 prediction_service.py
+代码：prediction_service.py
+from app.services.feature_service import align_features
+def predict_binary(pkg: dict, student_dict: dict, task_type: str | None = None):
+ X = align_features(student_dict, pkg["feature_columns"], pkg.get("category_mappings", {}))
+ Xp = pkg["preprocessor"].transform(X)
+ prob = float(pkg["model"].predict_proba(Xp)[0][1])
+ pred = int(pkg["model"].predict(Xp)[0])
+ result = {"pred_label": pred, "prob": prob}
+ if task_type == "risk":
+ if prob >= 0.8:
+ result["risk_level"] = "■■■"
+ elif prob >= 0.5:
+ result["risk_level"] = "■■■"
+ else:
+ result["risk_level"] = "■■■"
+ return result
+def predict_multiclass(pkg: dict, student_dict: dict):
+ X = align_features(student_dict, pkg["feature_columns"], pkg.get("category_mappings", {}))
+ Xp = pkg["preprocessor"].transform(X)
+第 8 页
+ pred = pkg["model"].predict(Xp)[0]
+ prob = pkg["model"].predict_proba(Xp)[0]
+ classes = pkg["classes"]
+ return {
+ "pred_label": str(pred),
+ "prob_map": {str(classes[i]): float(prob[i]) for i in range(len(classes))}
+ }
+def predict_regression(pkg: dict, student_dict: dict):
+ X = align_features(student_dict, pkg["feature_columns"], pkg.get("category_mappings", {}))
+ Xp = pkg["preprocessor"].transform(X)
+ return {"pred_value": float(pkg["model"].predict(Xp)[0])}
+def predict_cluster(pkg: dict, student_dict: dict):
+ X = align_features(student_dict, pkg["feature_columns"], None)
+ Xi = pkg["imputer"].transform(X)
+ Xs = pkg["scaler"].transform(Xi)
+ cluster_id = int(pkg["model"].predict(Xs)[0])
+ return {
+ "cluster_id": cluster_id,
+ "cluster_name": pkg["cluster_name_map"].get(str(cluster_id), f"■■{cluster_id}")
+ }
+八、接口设计
+统一返回格式：
+代码：统一返回格式
+{
+ "code": 200,
+ "message": "success",
+ "data": {}
+}
+8.1 认证接口
+登录接口：POST /api/auth/login
+请求体示例：
+{
+"username": "admin001",
+"password": "123456",
+"role": "admin"
+}
+返回示例：
+{
+"code": 200,
+"message": "success",
+"data": {
+"token": "xxxxx",
+"role": "admin",
+"user_id": 1,
+"student_id": null,
+"name": "张老师"
+}
+第 9 页
+}
+当前用户接口：GET /api/auth/me
+作用：前端初始化用户状态，判断跳转管理员端还是学生端。
+8.2 管理员端接口
+1）首页总览
+GET /api/admin/dashboard/overview
+返回：学生总数、风险学生人数、高表现人数、奖学金高概率人数、健康偏弱人数、风险等级分布、学
+业表现分布、画像分布。
+2）风险学生列表
+GET /api/admin/risk/list
+支持参数：
+- college
+- major
+- risk_level
+- keyword
+- page
+- page_size
+返回：
+- 学号
+- 姓名
+- 学院
+- 专业
+- 风险概率
+- 风险等级
+- 学业表现档次
+- 成绩趋势
+- 群体画像
+- 风险原因摘要
+3）单学生详情
+GET /api/admin/student/{student_id}
+返回建议包含：
+- 基本信息
+- 模型预测结果
+- 核心特征
+- 关键影响因素
+- 干预建议
+- 报告摘要
+4）群体画像
+GET /api/admin/cluster/profile
+第 10 页
+5）模型指标
+GET /api/admin/model/metrics
+6）特征重要性
+GET /api/admin/model/importance?task=risk_classification
+7）批量预测
+POST /api/admin/predict/batch
+8）导出接口
+GET /api/admin/export/risk
+GET /api/admin/export/report/{student_id}
+8.3 学生端接口
+1）学生首页
+GET /api/student/dashboard
+2）学生个性化报告
+GET /api/student/report
+3）学生趋势
+GET /api/student/trend
+4）学生建议
+GET /api/student/advice
+5）学生群体对比
+GET /api/student/compare/group
+九、权限控制
+权限层级：
+- 学校管理员：看全校
+- 学院管理员：看本学院
+- 学生：只能看自己
+推荐使用 JWT。
+代码：JWT 示例
+from datetime import datetime, timedelta
+from jose import jwt
+SECRET_KEY = "replace-with-your-secret"
+ALGORITHM = "HS256"
+def create_access_token(data: dict, expires_minutes: int = 120):
+ to_encode = data.copy()
+ to_encode["exp"] = datetime.utcnow() + timedelta(minutes=expires_minutes)
+第 11 页
+ return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+十、报告与建议服务
+后端不能只给分数，还要给解释和建议。
+代码：generate_advice
+def generate_advice(prediction: dict, features: dict):
+ advice = []
+ if prediction.get("risk_level") == "■■■":
+ advice.append("■■■■■■■■■■■■")
+ if features.get("learning_index", 0) < 50:
+ advice.append("■■■■■■■■■■■■■■■■■■■■■■■■■")
+ if features.get("health_index", 0) < 60:
+ advice.append("■■■■■■■■■■■■■■■■■")
+ if prediction.get("change_trend") == "■■":
+ advice.append("■■■■■■■■■■■■■■■■■■■■")
+ if not advice:
+ advice.append("■■■■■■■■■■■■■■■■■■")
+ return advice
+代码：build_student_report
+def build_student_report(basic_info: dict, prediction: dict, features: dict):
+ summary = f"{basic_info['name']}■■■■{prediction['cluster_name']}■■■■■■{prediction['risk_level']}■■■■■■{prediction['performance_label']}■"
+ report = {
+ "summary": summary,
+ "risk_analysis": f"■■■■■■■ {prediction['risk_prob']:.2f}■",
+ "performance_analysis": f"■■■■■■■■■ {prediction['performance_label']}■",
+ "health_analysis": f"■■■■■■■ {prediction['health_label']}■",
+ "group_profile_text": f"■■■■■ {prediction['cluster_name']}■",
+ "advice": generate_advice(prediction, features),
+ }
+ return report
+十一、CRUD 层建议
+不要在 router 里直接查数据库，建议通过 crud 层统一管理。
+代码：get_student_full_info
+from sqlalchemy.orm import Session
+from app.models.student import StudentBasicInfo, StudentFeature
+from app.models.prediction import StudentPrediction
+from app.models.report import StudentReport
+def get_student_full_info(db: Session, student_id: str):
+ basic = db.query(StudentBasicInfo).filter(StudentBasicInfo.student_id == student_id).first()
+ feature = db.query(StudentFeature).filter(StudentFeature.student_id == student_id).first()
+ pred = db.query(StudentPrediction).filter(StudentPrediction.student_id == student_id).first()
+ report = db.query(StudentReport).filter(StudentReport.student_id == student_id).order_by(StudentReport.id.desc()).first()
+ return {
+ "basic": basic,
+ "feature": feature,
+ "prediction": pred,
+ "report": report,
+ }
+十二、FastAPI 入口文件
+第 12 页
+代码：main.py
+from fastapi import FastAPI
+from app.routers import auth, admin_dashboard, admin_student, admin_model, student_portal
+from app.services.model_loader import model_registry
+app = FastAPI(title="■■■■■■■■■■")
+@app.on_event("startup")
+def startup():
+ model_registry.load_all()
+app.include_router(auth.router)
+app.include_router(admin_dashboard.router)
+app.include_router(admin_student.router)
+app.include_router(admin_model.router)
+app.include_router(student_portal.router)
+@app.get("/")
+def root():
+ return {"message": "backend is running"}
+十三、推荐开发顺序
+第一步：先建数据库表和 SQLAlchemy 模型。
+第二步：把导出的模型文件和 json 配置文件放到 ml/saved_models/。
+第三步：先写 model_loader.py，保证服务启动时能正常加载模型。
+第四步：写 feature_service.py 和 prediction_service.py，保证单条学生样本能正常预测。
+第五步：写认证接口与 token 鉴权。
+第六步：写管理员首页总览接口、风险列表接口、单学生详情接口。
+第七步：写学生端报告接口和趋势接口。
+第八步：最后补批量预测、导出、日志与异常处理。
+十四、第一阶段最小可交付范围
+如果时间紧，第一阶段只做下面 6 个接口就够演示：
+- POST /api/auth/login
+- GET /api/admin/dashboard/overview
+- GET /api/admin/risk/list
+- GET /api/admin/student/{student_id}
+- GET /api/student/report
+- GET /api/admin/model/metrics
+十五、常见坑位与规避方式
+1. 训练和预测特征不一致
+必须保存 feature_columns 和 category_mappings，预测时严格复现。
+2. 字符串字段导致预处理报错
+类别字段必须先按训练映射转成数字。
+3. 接口层直接查很多表
+多表组合逻辑放到 service 或 crud 层。
+4. 权限控制只在前端做
+第 13 页
+后端必须再次校验角色和访问范围。
+5. 单学生详情接口返回过少
+必须一次性返回：基本信息、预测结果、核心特征、建议、报告摘要。
+6. 模型加载太慢
+模型在服务启动时一次性加载，不要每个请求都重新加载。
+十六、后端最终交付标准
+一个高标准的比赛后端，至少要达到：
+1. 数据库能稳定存储学生、特征、预测、报告和模型指标。
+2. 接口能支持管理员端和学生端完整页面调用。
+3. 模型调用链条与训练阶段保持一致，不出推理错误。
+4. 能返回可解释结果与个性化建议，而不是只有一个分数。
+第 14 页
+这个 export_models.py 作用是：读取 train_features_final.csv，按现在  model_train.py  的同样逻辑构造标签重新训练几个核心模型，把模型和预处理器打包保存到：ml/saved_models/
+这个 export_models.py 作用是：读取 train_features_final.csv，按现在  model_train.py  的同样逻辑构造标签重新训练几个核心模型，把模型和预处理器打包保存到：ml/saved_models/
+saved_models里面就是提出来的每个详细模型
+就是之前那个压缩包里面的 train.py 是训练模型的，不是接后端的，后端后面接的是我给你现在发这个ml里面这几个文件，然后这个predict是一个测试用例，是用来模拟后端调用的，就是教你这几个模型怎么调用，输入格式是什么之类的，是一个参考
+给后端的交接说明模板
+1.  data_loader.py 
+作用：原始多源数据清洗与特征工程脚本。
+输入：原始 Excel / CSV。
+输出：train_features_final.csv。
+说明：这个脚本主要用于离线建模阶段，后端一般不直接运行，但预测字段来源于这里。
+2.  model_train.py 
+作用：模型训练与评估脚本。
+功能：
+• 读取 train_features_final.csv
+• 训练风险识别、奖学金预测、学业表现分类、健康分类、成绩变化趋势预测、综合成绩回归、聚类画像等模型
+• 输出模型效果指标与重要性结果
+说明：这是离线训练脚本，不是后端部署脚本。
+3.  export_models.py 
+作用：模型导出脚本。
+功能：
+• 重新训练并保存最终模型
+• 导出 .joblib 文件
+• 导出 feature_schema.json
+• 导出 category_schema.json
+• 导出 cluster_name_map.json
+说明：后端真正接模型时，主要使用这个脚本生成的文件。
+4.  predict_service_demo.py 
+作用：模型调用示例脚本。
+功能：
+• 加载导出的模型文件
+• 对输入数据做特征对齐和类别映射
+• 返回预测结果
+说明：后端可以直接参考这个脚本，把预测逻辑封装进接口。
+ 
+四、每个输出文件的作用
+这个你也最好告诉后端。
+ 
+1. train_features_final.csv
+作用：建模用最终特征表。
+用途：训练和调试使用。
+后端一般不直接依赖整表在线预测，但可以作为测试样本来源。
+ 
+2. risk_model.joblib
+作用：风险学生识别模型。
+输出：
+• 风险标签
+• 风险概率
+• 风险等级
+ 
+3. scholarship_model.joblib
+作用：奖学金获得概率预测模型。
+输出：
+• 是否可能获得奖学金
+• 概率值
+ 
+4. performance_model.joblib
+作用：学业表现分类模型。
+输出：
+• 高表现 / 中表现 / 低表现
+ 
+5. health_model.joblib
+作用：健康水平分类模型。
+输出：
+• 高健康 / 中健康 / 低健康
+ 
+6. change_trend_model.joblib
+作用：成绩变化趋势预测模型。
+输出：
+• 上升 / 稳定 / 下降
+ 
+7. score_regression_model.joblib
+作用：综合成绩回归预测模型。
+输出：
+• 预测分数
+ 
+8. cluster_model.joblib
+作用：学生画像聚类模型。
+输出：
+• 聚类编号
+• 学生画像类别
+ 
+9. feature_schema.json
+作用：定义每个模型输入哪些特征列。
+后端必须按这个顺序和字段喂模型。
+ 
+10. category_schema.json
+作用：定义类别字段编码映射。
+后端必须按这个映射把字符串转成数字，再调用模型。
+ 
+11. cluster_name_map.json
+
+作用：定义聚类编号与中文名称的对应关系。
+后端展示时要用它。
+后端最核心要接的是
+第一层：模型文件
+• .joblib
+第二层：配置文件
+• feature_schema.json
+• category_schema.json
+• cluster_name_map.json
+第三层：调用逻辑
+•  predict_service_demo.py
+后端不需要跑那个train.py,那个是训练脚本，只需要接ml/saved_models/ 下面的模型文件和 json 配置文件，然后 predict_service_demo.py 是模型调用示例，可以按这个逻辑封装 API

@@ -1,0 +1,30 @@
+{
+  "pages": [
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "统一登录" } },
+    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "管理员首页" } },
+    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "风险名单" } },
+    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "学生简版详情" } },
+    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "首页" } },
+    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "画像" } },
+    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "趋势" } },
+    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "报告" } },
+    { "path": "pages/student/mine/index", "style": { "navigationBarTitleText": "我的" } }
+  ],
+  "tabBar": {
+    "color": "#6a736c",
+    "selectedColor": "#3b7a57",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/student/home/index", "text": "首页" },
+      { "pagePath": "pages/student/profile/index", "text": "画像" },
+      { "pagePath": "pages/student/trend/index", "text": "趋势" },
+      { "pagePath": "pages/student/report/index", "text": "报告" },
+      { "pagePath": "pages/student/mine/index", "text": "我的" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f6f1"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "page": "student_detail",
+  "basic_info": {
+    "student_id": "200307700011",
+    "college": "计算机科学与技术学院",
+    "major": "数据科学与大数据技术"
+  },
+  "summary": {
+    "risk_level": "低风险",
+    "risk_prob": 0.0366,
+    "cluster": 1,
+    "cluster_label": "低投入风险型",
+    "performance_level": "低表现"
+  },
+  "core_metrics": {
+    "study_time": 8998.0,
+    "library_count": 2.0,
+    "night_net_ratio": 0.0,
+    "study_index": 6.71,
+    "self_discipline_index": 0.5,
+    "health_index": 0.0,
+    "development_index": 0.0
+  }
+}

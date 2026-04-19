@@ -1,0 +1,175 @@
+{
+  "basic_info": {
+    "student_id": "pjxuqwbj784",
+    "name": "",
+    "college": "计算机科学与技术学院",
+    "major": "软件工程"
+  },
+  "individual_profile": {
+    "metrics": {
+      "study_time": 20891.0,
+      "library_count": 200.0,
+      "night_net_ratio": 0.0,
+      "study_index": 253.7194,
+      "self_discipline_index": 209.9,
+      "health_index": 84.1479,
+      "development_index": 34.9255,
+      "risk_prob": 0.0009
+    },
+    "radar_data": [
+      {
+        "indicator": "学习投入",
+        "column": "study_index",
+        "value": 86.16
+      },
+      {
+        "indicator": "自律水平",
+        "column": "self_discipline_index",
+        "value": 88.0
+      },
+      {
+        "indicator": "健康发展",
+        "column": "health_index",
+        "value": 90.16
+      },
+      {
+        "indicator": "综合发展",
+        "column": "development_index",
+        "value": 73.64
+      },
+      {
+        "indicator": "风险反向值",
+        "column": "risk_prob",
+        "value": 83.52
+      }
+    ],
+    "comparisons": {
+      "overall_mean": {
+        "study_time": 334422.4432,
+        "library_count": 82.1976,
+        "night_net_ratio": 0.0205,
+        "study_index": 111.4192,
+        "self_discipline_index": 146.8886,
+        "health_index": 73.0983,
+        "development_index": 30.9196,
+        "risk_prob": 0.1128
+      },
+      "cluster_mean": {
+        "study_time": 492785.5736,
+        "library_count": 117.5109,
+        "night_net_ratio": 0.0196,
+        "study_index": 154.2932,
+        "self_discipline_index": 160.277,
+        "health_index": 76.0857,
+        "development_index": 31.9272,
+        "risk_prob": 0.1097
+      },
+      "percentile_rank": {
+        "study_index": 86.16,
+        "self_discipline_index": 88.0,
+        "health_index": 90.16,
+        "development_index": 73.64,
+        "study_time": 15.96,
+        "library_count": 86.12,
+        "night_net_ratio": 100.0,
+        "risk_prob": 83.52
+      }
+    }
+  },
+  "group_profile": {
+    "cluster": 3,
+    "cluster_label": "高投入稳健型",
+    "cluster_traits": [
+      "学习投入较高",
+      "图书馆活跃度较高"
+    ],
+    "cluster_means": {
+      "study_time": 492785.5736,
+      "library_count": 117.5109,
+      "night_net_ratio": 0.0196,
+      "study_index": 154.2932,
+      "self_discipline_index": 160.277,
+      "health_index": 76.0857,
+      "development_index": 31.9272,
+      "risk_prob": 0.1097
+    },
+    "cluster_distribution": [
+      {
+        "cluster": 0,
+        "label": "发展过渡型",
+        "count": 1299,
+        "ratio": 0.5196
+      },
+      {
+        "cluster": 1,
+        "label": "低投入风险型",
+        "count": 60,
+        "ratio": 0.024
+      },
+      {
+        "cluster": 2,
+        "label": "夜间波动型",
+        "count": 41,
+        "ratio": 0.0164
+      },
+      {
+        "cluster": 3,
+        "label": "高投入稳健型",
+        "count": 1100,
+        "ratio": 0.44
+      }
+    ]
+  },
+  "risk_result": {
+    "risk_prob": 0.0009,
+    "risk_label": 1,
+    "risk_level": "低风险",
+    "risk_thresholds": {
+      "low_upper": 0.06218,
+      "medium_upper": 0.131733
+    },
+    "cluster": 3,
+    "cluster_label": "高投入稳健型",
+    "risk_dimensions": [
+      {
+        "dimension": "学习投入风险",
+        "status": "表现较好",
+        "indicators": [
+          "study_index",
+          "study_time",
+          "library_count"
+        ],
+        "summary": "结合学习指数、学习时长和图书馆活跃度判断学习投入是否充足。"
+      },
+      {
+        "dimension": "行为规律风险",
+        "status": "风险较低",
+        "indicators": [
+          "self_discipline_index",
+          "night_net_ratio"
+        ],
+        "summary": "结合自律指数和夜间上网比例判断行为规律性是否稳定。"
+      },
+      {
+        "dimension": "健康发展风险",
+        "status": "表现较好",
+        "indicators": [
+          "health_index",
+          "development_index"
+        ],
+        "summary": "结合健康指数和综合发展指数判断身心状态与整体成长表现。"
+      }
+    ]
+  },
+  "explanations": [
+    "风险概率整体较低，当前行为表现相对稳定。",
+    "该学生在学习投入维度高于总体均值，说明学习参与度相对较好。",
+    "该学生在行为规律与自律维度表现较好，日常节奏相对稳定。",
+    "该学生在健康发展维度高于总体均值，运动与身体状态相对较好。",
+    "该学生在综合发展维度表现较好，整体成长性较强。",
+    "该学生当前属于“高投入稳健型”群体，该群体的典型特征包括：学习投入较高、图书馆活跃度较高。"
+  ],
+  "suggestions": [
+    "建议继续保持当前行为节奏，并按月复盘学习投入、自律表现、健康状态和风险变化。"
+  ]
+}
