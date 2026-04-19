@@ -40,7 +40,7 @@
 
 - 请求体：`username`、`password`、`role`
 - `role` 支持 `admin`、`student`
-- 成功：返回 `id`、`username`、`name`、`role`、`studentId`、`token`
+- 成功：返回 `id`、`username`、`name`、`role`、`studentId`、`token`、`tokenExpiresAt`、`permissions`
 - 失败：`401` 用户名或密码错误
 
 ### `GET /api/auth/me`
@@ -48,6 +48,18 @@
 - Header：`Authorization: Bearer <token>`
 - 成功：返回当前登录用户快照
 - 失败：`401` 未登录或令牌失效
+
+## Authorization
+
+- 学生端接口默认要求 `student` 或 `admin` 角色令牌。
+- 管理端数据接口默认要求 `admin`、`school_admin`、`college_admin` 或 `counselor` 角色令牌。
+- 图表图片导出接口当前保持匿名可访问，以兼容浏览器 `img` 标签直接加载。
+
+## Data quality pipeline
+
+- 主数据表会固定执行缺失值、零膨胀、长尾、离群值和字段取值范围检测。
+- 管理端分析结果与首页概览会返回数据质量摘要。
+- 单学生画像、报告和详情会返回 `dataQualityAlerts`，用于解释当前样本是否存在异常取值或缺失。
 
 ## Student APIs
 

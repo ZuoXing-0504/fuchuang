@@ -12,17 +12,28 @@ import pandas as pd
 import numpy as np
 import sys
 import secrets
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
+from functools import wraps
 from types import SimpleNamespace
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from backend import InMemoryBatchTaskStore, ModelOutputsRepository, UnifiedDataRepository
+from backend import (
+    DataQualityService,
+    InMemoryBatchTaskStore,
+    ModelOutputsRepository,
+    UnifiedDataRepository,
+    build_risk_drivers,
+    build_structured_actions,
+)
 from backend.routes.admin import create_admin_blueprint
 from backend.routes.auth import create_auth_blueprint
 from backend.routes.student import create_student_blueprint
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRIMARY_DB_PATH = os.path.join(BASE_DIR, 'student_behavior.db')
+TOKEN_TTL_HOURS = float(os.getenv('TOKEN_TTL_HOURS', '12'))
+TOKEN_TTL_DELTA = timedelta(hours=TOKEN_TTL_HOURS)
+PASSWORD_HASH_METHOD = os.getenv('PASSWORD_HASH_METHOD', 'pbkdf2:sha256:600000')
 
 # 添加分析模块路径
 sys.path.append(os.path.join(BASE_DIR, 'our project', 'analysis'))
@@ -96,7 +107,9 @@ EPHEMERAL_TOKEN_CACHE = {}
 ADMIN_METRICS_CACHE = None
 data_repository = None
 model_outputs_repository = None
+data_quality_service = None
 batch_task_store = InMemoryBatchTaskStore()
+RUNTIME_INITIALIZED = False
 
 # 数据库模型
 class Student(db.Model):
@@ -205,8 +218,24 @@ class UserAccount(db.Model):
     student_id = db.Column(db.String(50), nullable=True, index=True)
     name = db.Column(db.String(100), nullable=False)
     token = db.Column(db.String(128), nullable=True, unique=True, index=True)
+    token_expires_at = db.Column(db.DateTime, nullable=True, index=True)
+    last_login_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(50), nullable=True, index=True)
+    role = db.Column(db.String(20), nullable=True, index=True)
+    action = db.Column(db.String(100), nullable=False, index=True)
+    resource = db.Column(db.String(200), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='success', index=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    detail = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
 
 # 加载预测模型
 MODEL_DIR = os.path.join(BASE_DIR, "ml", "saved_models")
@@ -609,6 +638,139 @@ def _find_student_row(student_id):
     return data_repository.find_student_row(student_id)
 
 
+ROLE_PERMISSIONS = {
+    'admin': ['admin:read', 'admin:write', 'student:read'],
+    'student': ['student:self'],
+    'school_admin': ['admin:read', 'admin:write', 'student:read'],
+    'college_admin': ['admin:read', 'student:read'],
+    'counselor': ['student:read'],
+}
+
+
+def _utcnow():
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def _hash_password(password):
+    return generate_password_hash(password, method=PASSWORD_HASH_METHOD)
+
+
+def _client_ip():
+    forwarded = request.headers.get('X-Forwarded-For', '').strip()
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or ''
+
+
+def _log_audit_event(action, *, status='success', resource='', account=None, username=None, role=None, detail=''):
+    try:
+        payload = AuditLog(
+            username=username or getattr(account, 'username', None),
+            role=role or getattr(account, 'role', None),
+            action=action,
+            resource=resource,
+            status=status,
+            ip_address=_client_ip(),
+            detail=detail[:1000] if detail else None,
+        )
+        db.session.add(payload)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _parse_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.astimezone(UTC).replace(tzinfo=None) if value.tzinfo else value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text)
+        return parsed.astimezone(UTC).replace(tzinfo=None) if parsed.tzinfo else parsed
+    except Exception:
+        return None
+
+
+def _build_token_expiry():
+    return _utcnow() + TOKEN_TTL_DELTA
+
+
+def _is_token_expired(expires_at):
+    parsed = _parse_datetime(expires_at)
+    if parsed is None:
+        return True
+    return parsed <= _utcnow()
+
+
+def _clear_account_token(account):
+    try:
+        account.token = None
+        if hasattr(account, 'token_expires_at'):
+            account.token_expires_at = None
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _issue_token_for_account(account):
+    token = secrets.token_hex(24)
+    expires_at = _build_token_expiry()
+    if isinstance(account, UserAccount):
+        account.token = token
+        account.token_expires_at = expires_at
+        account.last_login_at = _utcnow()
+        db.session.commit()
+    return token, expires_at
+
+
+def require_roles(*allowed_roles):
+    allowed = {role for role in allowed_roles if role}
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            account = _get_current_account(optional=True)
+            if not account:
+                _log_audit_event(
+                    'auth_required',
+                    status='denied',
+                    resource=request.path,
+                    detail=f"allowed_roles={sorted(allowed)}",
+                )
+                return jsonify({'code': 401, 'message': '未登录或登录已失效', 'data': None}), 401
+            role = getattr(account, 'role', '')
+            if allowed and role not in allowed:
+                _log_audit_event(
+                    'permission_denied',
+                    status='denied',
+                    resource=request.path,
+                    account=account,
+                    detail=f"allowed_roles={sorted(allowed)}",
+                )
+                return jsonify({'code': 403, 'message': '当前账号没有访问该资源的权限', 'data': None}), 403
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _ensure_runtime_schema():
+    statements = []
+    with db.engine.begin() as connection:
+        if db.engine.dialect.name == 'sqlite':
+            columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(user_accounts)").fetchall()}
+            if 'token_expires_at' not in columns:
+                statements.append("ALTER TABLE user_accounts ADD COLUMN token_expires_at DATETIME")
+            if 'last_login_at' not in columns:
+                statements.append("ALTER TABLE user_accounts ADD COLUMN last_login_at DATETIME")
+            for statement in statements:
+                connection.exec_driver_sql(statement)
+
+
 def _get_request_token():
     auth_header = request.headers.get('Authorization', '').strip()
     if auth_header.lower().startswith('bearer '):
@@ -622,9 +784,23 @@ def _get_current_account(optional=False):
         return None if optional else None
     account = UserAccount.query.filter_by(token=token).first()
     if account:
+        if _is_token_expired(getattr(account, 'token_expires_at', None)):
+            _log_audit_event('token_expired', status='denied', resource=request.path, account=account)
+            _clear_account_token(account)
+            return None if optional else None
         return account
     cached = EPHEMERAL_TOKEN_CACHE.get(token)
     if cached:
+        if _is_token_expired(cached.get('token_expires_at')):
+            EPHEMERAL_TOKEN_CACHE.pop(token, None)
+            _log_audit_event(
+                'token_expired',
+                status='denied',
+                resource=request.path,
+                username=cached.get('username'),
+                role=cached.get('role'),
+            )
+            return None if optional else None
         return SimpleNamespace(**cached)
     return None if optional else None
 
@@ -637,6 +813,7 @@ def _serialize_account(account, token_override=None):
         role = account.get('role')
         student_id = account.get('student_id')
         token = account.get('token')
+        token_expires_at = account.get('token_expires_at')
     else:
         account_id = account.id
         username = account.username
@@ -644,6 +821,7 @@ def _serialize_account(account, token_override=None):
         role = account.role
         student_id = account.student_id
         token = account.token
+        token_expires_at = getattr(account, 'token_expires_at', None)
     return {
         'id': str(account_id),
         'userId': account_id,
@@ -652,10 +830,12 @@ def _serialize_account(account, token_override=None):
         'role': role,
         'studentId': student_id,
         'token': token_override if token_override is not None else token,
+        'tokenExpiresAt': _parse_datetime(token_expires_at).isoformat() if _parse_datetime(token_expires_at) else None,
+        'permissions': ROLE_PERMISSIONS.get(role, []),
     }
 
 
-def _store_ephemeral_token(account, token):
+def _store_ephemeral_token(account, token, expires_at):
     if isinstance(account, dict):
         payload = {
             'id': account.get('id', 0),
@@ -664,6 +844,7 @@ def _store_ephemeral_token(account, token):
             'role': account.get('role', 'student'),
             'student_id': account.get('student_id'),
             'token': token,
+            'token_expires_at': expires_at.isoformat(),
         }
         EPHEMERAL_TOKEN_CACHE[token] = payload
         return
@@ -674,6 +855,7 @@ def _store_ephemeral_token(account, token):
         'role': account.role,
         'student_id': account.student_id,
         'token': token,
+        'token_expires_at': expires_at.isoformat(),
     }
 
 
@@ -681,11 +863,12 @@ def _build_fallback_admin_account():
     return SimpleNamespace(
         id=0,
         username='admin001',
-        password_hash=generate_password_hash('123456'),
+        password_hash=_hash_password(os.getenv('ADMIN_DEFAULT_PASSWORD', '123456')),
         role='admin',
         student_id=None,
         name='张老师',
         token=None,
+        token_expires_at=None,
     )
 
 
@@ -695,7 +878,7 @@ def _ensure_admin_seed():
         return admin
     admin = UserAccount(
         username='admin001',
-        password_hash=generate_password_hash('123456'),
+        password_hash=_hash_password(os.getenv('ADMIN_DEFAULT_PASSWORD', '123456')),
         role='admin',
         student_id=None,
         name='张老师',
@@ -1121,6 +1304,7 @@ data_repository = UnifiedDataRepository(
     student_feature_column_candidates=STUDENT_FEATURE_COLUMN_CANDIDATES,
 )
 model_outputs_repository = ModelOutputsRepository(Path(BASE_DIR))
+data_quality_service = DataQualityService(data_repository)
 
 
 def _normalize_student_id_text(value):
@@ -1531,6 +1715,31 @@ def _build_feature_tables(student_id, report, row=None):
     ]
 
     return {"featureTables": feature_tables, "featureFormulas": feature_formulas}
+
+
+def _build_data_quality_summary():
+    if data_quality_service is None:
+        return {}
+    return data_quality_service.build_dataset_report()
+
+
+def _build_data_quality_alerts(row):
+    if data_quality_service is None:
+        return []
+    return data_quality_service.build_student_alerts(row)
+
+
+def _build_explainability_bundle(report, row=None):
+    quality_alerts = _build_data_quality_alerts(row)
+    drivers = build_risk_drivers(report, quality_alerts=quality_alerts)
+    actions = build_structured_actions(drivers, report.get("suggestions", []))
+    return {
+        "qualityAlerts": quality_alerts,
+        "riskDrivers": drivers,
+        "actions": actions,
+    }
+
+
 def _build_dimension_basis(report):
     metrics = report["individual_profile"]["metrics"]
     comparisons = report["individual_profile"].get("comparisons", {})
@@ -1599,8 +1808,10 @@ def _build_prediction_steps(report, detail_snapshot, dimension_basis):
     ]
 
 
-def _build_prediction_evidence(report, row=None, detail_snapshot=None):
+def _build_prediction_evidence(report, row=None, detail_snapshot=None, quality_alerts=None, risk_drivers=None):
     detail_snapshot = detail_snapshot or {}
+    quality_alerts = quality_alerts or []
+    risk_drivers = risk_drivers or []
     behavior_map = {item.get("label"): item.get("value") for item in detail_snapshot.get("behaviorDetails", [])}
     academic_map = {item.get("label"): item.get("value") for item in detail_snapshot.get("academicDetails", [])}
     metrics = report["individual_profile"].get("metrics", {})
@@ -1630,6 +1841,20 @@ def _build_prediction_evidence(report, row=None, detail_snapshot=None):
     append_evidence("学习投入展示分", _safe_number(metrics.get("study_index")), "展示分", "学习投入展示分由原始工程指标按全样本分位数换算得到。")
     append_evidence("行为规律展示分", _safe_number(metrics.get("self_discipline_index")), "展示分", "行为规律展示分用于判断当前学生在全样本中的相对位置。")
     append_evidence("健康发展展示分", _safe_number(metrics.get("health_index")), "展示分", "健康发展展示分用于观察当前身心状态在样本中的相对水平。")
+    for driver in risk_drivers[:3]:
+        append_evidence(
+            driver.get("feature"),
+            f"影响度 {round(_safe_float(driver.get('impact'), 0) * 100, 1)}%",
+            "风险驱动",
+            driver.get("description"),
+        )
+    for alert in quality_alerts[:3]:
+        append_evidence(
+            alert.get("label"),
+            alert.get("type"),
+            "数据质量",
+            alert.get("description"),
+        )
     return evidence
 
 
@@ -1809,6 +2034,7 @@ def _build_student_home_payload(student_id):
     row = _find_student_row(student_id)
     metrics = report["individual_profile"]["metrics"]
     risk_result = report["risk_result"]
+    explainability = _build_explainability_bundle(report, row=row)
     name = report["basic_info"].get("name") or student_id
     cluster_label = risk_result.get("cluster_label") or "待识别画像"
     secondary_tags = _build_secondary_tags(cluster_label, metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
@@ -1830,6 +2056,8 @@ def _build_student_home_payload(student_id):
             {"label": "综合发展", "value": f"{_clamp_score(metrics.get('development_index'), 65):.0f}分"},
         ],
         "insights": report.get("explanations", [])[:4],
+        "dataQualityAlerts": explainability["qualityAlerts"][:3],
+        "riskDrivers": explainability["riskDrivers"][:3],
         "compareMetrics": _build_student_compare_payload(student_id).get("compareMetrics", []),
         "trendSeries": _build_student_trend_series(report),
         "chartStatus": _get_analysis_chart_status(),
@@ -1839,8 +2067,10 @@ def _build_student_home_payload(student_id):
 
 def _build_student_profile_payload(student_id):
     report = generate_report(student_id)
+    row = _find_student_row(student_id)
     risk_result = report["risk_result"]
     metrics = report["individual_profile"]["metrics"]
+    explainability = _build_explainability_bundle(report, row=row)
     radar = []
     for item in report["individual_profile"]["radar_data"]:
         label = item.get("indicator")
@@ -1851,7 +2081,7 @@ def _build_student_profile_payload(student_id):
     cluster_label = risk_result.get("cluster_label") or "待识别画像"
     secondary_tags = _build_secondary_tags(cluster_label, metrics=metrics, risk_prob=risk_result.get("risk_prob"))
     cluster_traits = report["group_profile"].get("cluster_traits", [])
-    profile_segment = _build_profile_segment(cluster_label, metrics=metrics, row=_find_student_row(student_id), risk_prob=risk_result.get("risk_prob"))
+    profile_segment = _build_profile_segment(cluster_label, metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
     description = f"当前学生被识别为“{cluster_label}”，细分类型为“{profile_segment['profileSubtype']}”。结合群体特征来看，{('、'.join(cluster_traits[:2]) or '当前样本特征较为集中')}，需要结合详细指标继续判断。"
     return {
         "studentId": student_id,
@@ -1867,6 +2097,8 @@ def _build_student_profile_payload(student_id):
         "radar": radar,
         "strengths": [item["indicator"] for item in ranked[:2]],
         "weaknesses": [item["indicator"] for item in ranked[-2:]],
+        "dataQualityAlerts": explainability["qualityAlerts"][:3],
+        "riskDrivers": explainability["riskDrivers"][:3],
     }
 
 
@@ -1879,9 +2111,16 @@ def _build_student_report_payload(student_id):
     sections = [dimension["summary"] for dimension in risk_result.get("risk_dimensions", [])]
     sections.extend(report.get("explanations", [])[:3])
     detail_snapshot = _build_student_detail_snapshot(student_id, row=row, metrics=metrics, risk_result=risk_result)
+    explainability = _build_explainability_bundle(report, row=row)
     dimension_basis = _build_dimension_basis(report)
     prediction_steps = _build_prediction_steps(report, detail_snapshot, dimension_basis)
-    prediction_evidence = _build_prediction_evidence(report, row=row, detail_snapshot=detail_snapshot)
+    prediction_evidence = _build_prediction_evidence(
+        report,
+        row=row,
+        detail_snapshot=detail_snapshot,
+        quality_alerts=explainability["qualityAlerts"],
+        risk_drivers=explainability["riskDrivers"],
+    )
     feature_payload = _build_feature_tables(student_id, report, row=row)
     profile_segment = _build_profile_segment(risk_result.get("cluster_label") or "发展过渡型", metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
     return {
@@ -1900,6 +2139,9 @@ def _build_student_report_payload(student_id):
         "sections": sections[:6],
         "evaluations": report.get("explanations", [])[:5],
         "suggestions": report.get("suggestions", [])[:6],
+        "recommendedActions": explainability["actions"],
+        "dataQualityAlerts": explainability["qualityAlerts"],
+        "riskDrivers": explainability["riskDrivers"],
         "profileExplanation": profile_segment["profileExplanation"],
         "profileHighlights": profile_segment["profileHighlights"],
         "behaviorDetails": detail_snapshot["behaviorDetails"],
@@ -1920,15 +2162,17 @@ def _build_student_report_payload(student_id):
 
 def _build_student_recommendations_payload(student_id):
     report = generate_report(student_id)
+    row = _find_student_row(student_id)
+    explainability = _build_explainability_bundle(report, row=row)
     recommendations = []
-    for index, suggestion in enumerate(report.get("suggestions", []), start=1):
-        category = _category_from_text(suggestion)
+    for index, action in enumerate(explainability["actions"], start=1):
         recommendations.append({
             "id": f"REC-{index}",
-            "category": category,
-            "priority": _priority_from_text(suggestion),
-            "title": suggestion[:20] + ("..." if len(suggestion) > 20 else ""),
-            "description": suggestion
+            "category": action.get("category") or "综合",
+            "priority": action.get("priority") or "medium",
+            "title": action.get("title") or f"建议 {index}",
+            "description": action.get("description") or "",
+            "reason": action.get("reason") or "",
         })
     return {"studentId": student_id, "recommendations": recommendations}
 
@@ -2053,6 +2297,7 @@ def _build_admin_analysis_results_payload():
     cluster_count = int(frame["cluster"].dropna().nunique()) if frame is not None and "cluster" in frame.columns else 0
     risk_auc = 0.92
     chart_status = _get_analysis_chart_status()
+    data_quality = _build_data_quality_summary()
     return {
         "summaryCards": [
             {"label": "分析成果图", "value": len(charts), "tone": "primary"},
@@ -2061,6 +2306,7 @@ def _build_admin_analysis_results_payload():
             {"label": "风险模型AUC", "value": risk_auc, "tone": "danger"},
         ],
         "chartStatus": chart_status,
+        "dataQuality": data_quality,
         "charts": [
             {
                 **item,
@@ -2109,6 +2355,7 @@ def _build_admin_dashboard_overview_payload():
         "performanceDistribution": _count_distribution(students, "performanceLevel"),
         "profileDistribution": _count_distribution(students, "profileCategory"),
         "topRisks": top_risks,
+        "dataQualitySummary": _build_data_quality_summary().get("summary", {}),
     }
 
 
@@ -2156,7 +2403,7 @@ def register_account():
     display_name = str(student_row.get('name') or '').strip() or student_id
     account = UserAccount(
         username=username,
-        password_hash=generate_password_hash(password),
+        password_hash=_hash_password(password),
         role='student',
         student_id=student_id,
         name=display_name,
@@ -2165,6 +2412,12 @@ def register_account():
     db.session.commit()
     global ADMIN_METRICS_CACHE
     ADMIN_METRICS_CACHE = None
+    _log_audit_event(
+        'register',
+        resource='/api/auth/register',
+        account=account,
+        detail=f"student_id={student_id}",
+    )
 
     return jsonify({
         'code': 200,
@@ -2183,6 +2436,7 @@ def login_v2():
     password = str(data.get('password', '')).strip()
     role = str(data.get('role', 'student')).strip() or 'student'
     if not username or not password:
+        _log_audit_event('login', status='denied', resource='/api/auth/login', username=username, role=role, detail='missing_credentials')
         return jsonify({'code': 400, 'message': '缺少必要参数', 'data': None}), 400
 
     if role == 'admin':
@@ -2195,6 +2449,7 @@ def login_v2():
         account = _build_fallback_admin_account()
 
     if account is None or not check_password_hash(account.password_hash, password):
+        _log_audit_event('login', status='denied', resource='/api/auth/login', username=username, role=role, detail='invalid_credentials')
         return jsonify({'code': 401, 'message': '用户名或密码错误', 'data': None}), 401
 
     account_snapshot = {
@@ -2205,17 +2460,18 @@ def login_v2():
         'student_id': getattr(account, 'student_id', None),
         'token': None,
     }
-    token = secrets.token_hex(24)
+    token, expires_at = secrets.token_hex(24), _build_token_expiry()
     try:
-        account.token = token
         if isinstance(account, UserAccount):
-            db.session.commit()
+            token, expires_at = _issue_token_for_account(account)
         else:
             raise RuntimeError('ephemeral account')
     except Exception:
         db.session.rollback()
-        _store_ephemeral_token(account_snapshot, token)
-        return jsonify({'code': 200, 'message': 'success', 'data': _serialize_account(account_snapshot, token_override=token)})
+        _store_ephemeral_token(account_snapshot, token, expires_at)
+        _log_audit_event('login', resource='/api/auth/login', username=account_snapshot['username'], role=account_snapshot['role'])
+        return jsonify({'code': 200, 'message': 'success', 'data': _serialize_account({**account_snapshot, 'token_expires_at': expires_at.isoformat()}, token_override=token)})
+    _log_audit_event('login', resource='/api/auth/login', account=account)
     return jsonify({'code': 200, 'message': 'success', 'data': _serialize_account(account, token_override=token)})
 
 
@@ -2283,11 +2539,18 @@ def get_admin_student_detail_v2(student_id):
     registration = _get_account_registration_info(student_id)
     secondary_tags = _build_secondary_tags(risk_result.get("cluster_label") or "发展过渡型", metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
     detail_snapshot = _build_student_detail_snapshot(student_id, row=row, metrics=metrics, risk_result=risk_result)
+    explainability = _build_explainability_bundle(report, row=row)
     report_sections = [dimension["summary"] for dimension in risk_result.get("risk_dimensions", [])]
     report_sections.extend(report.get("explanations", [])[:3])
     dimension_basis = _build_dimension_basis(report)
     prediction_steps = _build_prediction_steps(report, detail_snapshot, dimension_basis)
-    prediction_evidence = _build_prediction_evidence(report, row=row, detail_snapshot=detail_snapshot)
+    prediction_evidence = _build_prediction_evidence(
+        report,
+        row=row,
+        detail_snapshot=detail_snapshot,
+        quality_alerts=explainability["qualityAlerts"],
+        risk_drivers=explainability["riskDrivers"],
+    )
     feature_payload = _build_feature_tables(student_id, report, row=row)
     profile_segment = _build_profile_segment(risk_result.get("cluster_label") or "发展过渡型", metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
     score_prediction_value = detail_snapshot.get("scorePrediction")
@@ -2323,11 +2586,14 @@ def get_admin_student_detail_v2(student_id):
             for item in report["individual_profile"]["radar_data"]
         ],
         "factors": [
-            {"feature": dimension["dimension"], "description": dimension["summary"]}
-            for dimension in risk_result.get("risk_dimensions", [])[:4]
+            {"feature": item.get("feature"), "impact": item.get("impact"), "description": item.get("description")}
+            for item in explainability["riskDrivers"][:4]
         ],
         "compareMetrics": _build_student_compare_payload(student_id).get("compareMetrics", []),
         "interventions": report.get("suggestions", [])[:6],
+        "recommendedActions": explainability["actions"],
+        "dataQualityAlerts": explainability["qualityAlerts"],
+        "riskDrivers": explainability["riskDrivers"],
         "reportTitle": "个性化成长评价报告",
         "reportSummary": "；".join(report.get("explanations", [])[:3]),
         "reportSections": report_sections[:6],
@@ -2342,6 +2608,7 @@ def get_admin_student_detail_v2(student_id):
         "registrationStatus": registration["status"],
         "registeredUsername": registration["username"],
     }
+    _log_audit_event('view_student_detail', resource=f'/api/admin/student/{student_id}', account=_get_current_account(optional=True), detail=student_id)
     return jsonify({'code': 200, 'message': 'success', 'data': detail})
 
 
@@ -2414,6 +2681,7 @@ def submit_batch_predict_v2():
     data = request.json or {}
     file_name = str(data.get('fileName') or '').strip()
     task = batch_task_store.submit(file_name)
+    _log_audit_event('submit_batch_predict', resource='/api/admin/tasks/batch-predict', account=_get_current_account(optional=True), detail=file_name)
     return jsonify({'code': 200, 'message': 'success', 'data': task})
 
 
@@ -2489,6 +2757,23 @@ def submit_batch_predict():
     return submit_batch_predict_v2()
 
 
+def _initialize_runtime_state():
+    global RUNTIME_INITIALIZED
+    if RUNTIME_INITIALIZED:
+        return
+    db.create_all()
+    _ensure_runtime_schema()
+    _ensure_admin_seed()
+    _build_admin_student_metrics_list(force_refresh=True)
+    _ensure_analysis_charts()
+    RUNTIME_INITIALIZED = True
+
+
+@app.before_request
+def _bootstrap_runtime():
+    _initialize_runtime_state()
+
+
 app.register_blueprint(
     create_auth_blueprint(
         register_account=register_account,
@@ -2498,37 +2783,33 @@ app.register_blueprint(
 )
 app.register_blueprint(
     create_student_blueprint(
-        get_student_dashboard=get_student_dashboard,
-        get_student_profile=get_student_profile,
-        get_student_trends=get_student_trends,
-        get_student_report=get_student_report,
-        get_student_recommendations=get_student_recommendations,
-        get_student_group_compare=get_student_group_compare,
+        get_student_dashboard=require_roles('student', 'admin')(get_student_dashboard),
+        get_student_profile=require_roles('student', 'admin')(get_student_profile),
+        get_student_trends=require_roles('student', 'admin')(get_student_trends),
+        get_student_report=require_roles('student', 'admin')(get_student_report),
+        get_student_recommendations=require_roles('student', 'admin')(get_student_recommendations),
+        get_student_group_compare=require_roles('student', 'admin')(get_student_group_compare),
     )
 )
 app.register_blueprint(
     create_admin_blueprint(
-        get_admin_analysis_results=get_admin_analysis_results,
-        get_dashboard_overview=get_dashboard_overview,
-        get_cluster_insights=get_cluster_insights,
-        get_admin_student_detail=get_admin_student_detail,
-        get_risk_students=get_risk_students,
+        get_admin_analysis_results=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_admin_analysis_results),
+        get_dashboard_overview=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_dashboard_overview),
+        get_cluster_insights=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_cluster_insights),
+        get_admin_student_detail=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_admin_student_detail),
+        get_risk_students=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_risk_students),
         get_chart_file=get_chart_file,
-        get_model_summary=get_model_summary,
-        get_model_importance=get_model_importance,
-        get_task_history=get_task_history,
-        submit_batch_predict=submit_batch_predict,
+        get_model_summary=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_model_summary),
+        get_model_importance=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_model_importance),
+        get_task_history=require_roles('admin', 'school_admin', 'college_admin', 'counselor')(get_task_history),
+        submit_batch_predict=require_roles('admin', 'school_admin', 'college_admin')(submit_batch_predict),
     )
 )
 
 if __name__ == '__main__':
     debug_mode = str(os.getenv('FLASK_DEBUG', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
-    # 默认初始化本地数据库，避免每次启动清空数据。
     with app.app_context():
-        db.create_all()
-        _ensure_admin_seed()
-        _build_admin_student_metrics_list(force_refresh=True)
-        _ensure_analysis_charts()
+        _initialize_runtime_state()
     app.run(debug=debug_mode, use_reloader=False)
 
 

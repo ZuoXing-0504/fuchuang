@@ -1,9 +1,18 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime
 
+from backend.data_quality import DataQualityService
 from backend.data_source import ModelOutputsRepository, UnifiedDataRepository
-from app import BASE_DIR, STUDENT_FEATURE_COLUMN_CANDIDATES, app, load_analysis_master
+from app import (
+    BASE_DIR,
+    STUDENT_FEATURE_COLUMN_CANDIDATES,
+    UserAccount,
+    app,
+    db,
+    load_analysis_master,
+)
 
 
 class BackendSmokeTests(unittest.TestCase):
@@ -14,6 +23,7 @@ class BackendSmokeTests(unittest.TestCase):
             student_feature_column_candidates=STUDENT_FEATURE_COLUMN_CANDIDATES,
         )
         self.model_repository = ModelOutputsRepository(BASE_DIR)
+        self.quality_service = DataQualityService(self.repository)
 
     def test_analysis_repository_uses_analysis_master_as_canonical_source(self) -> None:
         summary = self.repository.data_source_summary()
@@ -27,20 +37,48 @@ class BackendSmokeTests(unittest.TestCase):
         self.assertGreater(len(summary["metrics"]), 0)
         self.assertGreater(len(summary["importance"]), 0)
 
+    def test_data_quality_summary_and_alerts_exist(self) -> None:
+        report = self.quality_service.build_dataset_report()
+        self.assertIn("summary", report)
+        self.assertGreater(len(report["fields"]), 0)
+        row = self.repository.find_student_row(self.repository.pick_default_student_id())
+        alerts = self.quality_service.build_student_alerts(row)
+        self.assertIsInstance(alerts, list)
+
     def test_admin_endpoints_contract_smoke(self) -> None:
         client = app.test_client()
 
-        dashboard = client.get("/api/admin/dashboard/overview")
+        login_response = client.post("/api/auth/login", json={"username": "admin001", "password": "123456", "role": "admin"})
+        self.assertEqual(login_response.status_code, 200)
+        token = login_response.get_json()["data"]["token"]
+
+        dashboard = client.get("/api/admin/dashboard/overview", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(dashboard.status_code, 200)
         self.assertIn("data", dashboard.get_json())
+        self.assertIn("dataQualitySummary", dashboard.get_json()["data"])
 
-        metrics = client.get("/api/admin/model/metrics")
+        metrics = client.get("/api/admin/model/metrics", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(metrics.status_code, 200)
         self.assertIn("metrics", metrics.get_json()["data"])
 
-        clusters = client.get("/api/admin/cluster/profile")
+        clusters = client.get("/api/admin/cluster/profile", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(clusters.status_code, 200)
         self.assertIsInstance(clusters.get_json()["data"], list)
+
+    def test_admin_endpoint_requires_valid_token(self) -> None:
+        client = app.test_client()
+        response = client.get("/api/admin/dashboard/overview")
+        self.assertEqual(response.status_code, 401)
+
+        with app.app_context():
+            account = UserAccount.query.filter_by(username="admin001").first()
+            self.assertIsNotNone(account)
+            account.token = "expired-token-for-test"
+            account.token_expires_at = datetime(2000, 1, 1)
+            db.session.commit()
+
+        expired = client.get("/api/admin/dashboard/overview", headers={"Authorization": "Bearer expired-token-for-test"})
+        self.assertEqual(expired.status_code, 401)
 
 
 if __name__ == "__main__":

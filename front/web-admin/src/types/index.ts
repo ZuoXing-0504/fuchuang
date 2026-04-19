@@ -14,6 +14,8 @@ export interface AuthUser {
   role: RoleType;
   college?: string;
   token: string;
+  tokenExpiresAt?: string;
+  permissions?: string[];
 }
 
 export interface StudentBaseInfo {
