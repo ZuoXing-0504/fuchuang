@@ -2,6 +2,7 @@
 from flask_cors import CORS
 import os
 import sqlite3
+from pathlib import Path
 from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy.engine import Engine
 from flask_sqlalchemy import SQLAlchemy
@@ -14,6 +15,11 @@ import secrets
 from datetime import datetime
 from types import SimpleNamespace
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from backend import InMemoryBatchTaskStore, ModelOutputsRepository, UnifiedDataRepository
+from backend.routes.admin import create_admin_blueprint
+from backend.routes.auth import create_auth_blueprint
+from backend.routes.student import create_student_blueprint
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRIMARY_DB_PATH = os.path.join(BASE_DIR, 'student_behavior.db')
@@ -88,6 +94,9 @@ def _configure_sqlite_connection(dbapi_connection, connection_record):
 
 EPHEMERAL_TOKEN_CACHE = {}
 ADMIN_METRICS_CACHE = None
+data_repository = None
+model_outputs_repository = None
+batch_task_store = InMemoryBatchTaskStore()
 
 # 数据库模型
 class Student(db.Model):
@@ -412,13 +421,12 @@ LEGACY_DEMO_API_BLOCK = r'''
 '''
 
 def _load_analysis_frame():
-    if not analysis_available:
+    if not analysis_available or data_repository is None:
         return None
-    try:
-        return load_analysis_master(rebuild_if_missing=True)
-    except Exception as exc:
-        print(f"分析主表加载失败: {exc}")
-        return None
+    frame = data_repository.load_analysis_frame()
+    if frame is None:
+        print("分析主表加载失败: 未能从统一数据源读取 analysis_master.csv")
+    return frame
 
 
 def _ensure_analysis_charts(force=False):
@@ -579,10 +587,9 @@ def _get_account_registration_info(student_id):
 
 
 def _pick_default_student_id():
-    frame = _load_analysis_frame()
-    if frame is None or frame.empty:
+    if data_repository is None:
         return None
-    return str(frame.iloc[0]["student_id"])
+    return data_repository.pick_default_student_id()
 
 
 def _resolve_student_id(student_id=None):
@@ -597,13 +604,9 @@ def _resolve_student_id(student_id=None):
 
 
 def _find_student_row(student_id):
-    frame = _load_analysis_frame()
-    if frame is None or frame.empty:
+    if data_repository is None:
         return None
-    matched = frame[frame["student_id"].astype(str).str.lower() == str(student_id).strip().lower()]
-    if matched.empty:
-        return None
-    return matched.iloc[0]
+    return data_repository.find_student_row(student_id)
 
 
 def _get_request_token():
@@ -1112,6 +1115,13 @@ FEATURE_UNITS = {
 
 FEATURE_LABEL_MAP = {alias: labels[-1] for alias, labels in STUDENT_FEATURE_COLUMN_CANDIDATES.items()}
 
+data_repository = UnifiedDataRepository(
+    Path(BASE_DIR),
+    analysis_loader=load_analysis_master if analysis_available else None,
+    student_feature_column_candidates=STUDENT_FEATURE_COLUMN_CANDIDATES,
+)
+model_outputs_repository = ModelOutputsRepository(Path(BASE_DIR))
+
 
 def _normalize_student_id_text(value):
     if value is None:
@@ -1126,6 +1136,10 @@ def _normalize_student_id_text(value):
 
 def _load_train_features_frame():
     global TRAIN_FEATURES_CACHE
+    if data_repository is not None:
+        frame = data_repository.load_train_features_frame()
+        TRAIN_FEATURES_CACHE = frame
+        return frame
     if TRAIN_FEATURES_CACHE is not None:
         return TRAIN_FEATURES_CACHE
     if not os.path.exists(TRAIN_FEATURES_PATH):
@@ -1143,6 +1157,8 @@ def _load_train_features_frame():
 
 
 def _load_train_feature_record(student_id):
+    if data_repository is not None:
+        return data_repository.load_train_feature_record(student_id)
     frame = _load_train_features_frame()
     if frame.empty or 'student_id' not in frame.columns:
         return {}
@@ -1239,6 +1255,9 @@ def _build_extra_prediction_outputs(feature_record, prediction_record):
 
 
 def _load_student_feature_record(student_id):
+    if data_repository is not None:
+        return data_repository.load_student_feature_record(student_id)
+
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'student_behavior.db')
     result = {}
     raw_record = _load_train_feature_record(student_id)
@@ -2058,7 +2077,60 @@ def _build_admin_analysis_results_payload():
     }
 
 
-@app.route('/api/auth/register', methods=['POST'])
+def _count_distribution(rows, key):
+    counter = {}
+    for row in rows:
+        name = str(row.get(key) or "未知")
+        counter[name] = counter.get(name, 0) + 1
+    return [{"name": name, "value": value} for name, value in sorted(counter.items(), key=lambda item: item[1], reverse=True)]
+
+
+def _build_admin_dashboard_overview_payload():
+    students = _build_admin_student_metrics_list()
+    total = len(students)
+    registered = sum(1 for row in students if row.get("registrationStatus") == "已注册")
+    high_risk = sum(1 for row in students if row.get("riskLevel") == "高风险")
+    medium_risk = sum(1 for row in students if row.get("riskLevel") == "中风险")
+    register_rate = round((registered / total) * 100, 1) if total else 0.0
+
+    top_risks = sorted(
+        students,
+        key=lambda row: ({"高风险": 3, "中风险": 2, "低风险": 1}.get(row.get("riskLevel"), 0), -float(row.get("scorePrediction") or 0)),
+        reverse=True,
+    )[:8]
+    return {
+        "kpis": [
+            {"label": "样本学生数", "value": str(total), "delta": "统一来自 analysis_master.csv", "tone": "primary"},
+            {"label": "高风险学生", "value": str(high_risk), "delta": "优先干预对象", "tone": "danger"},
+            {"label": "中风险学生", "value": str(medium_risk), "delta": "建议持续跟踪", "tone": "warning"},
+            {"label": "注册覆盖率", "value": f"{register_rate}%", "delta": f"{registered} 个已注册账号", "tone": "success"},
+        ],
+        "riskDistribution": _count_distribution(students, "riskLevel"),
+        "performanceDistribution": _count_distribution(students, "performanceLevel"),
+        "profileDistribution": _count_distribution(students, "profileCategory"),
+        "topRisks": top_risks,
+    }
+
+
+def _build_admin_cluster_insights_payload():
+    if model_outputs_repository is None:
+        return []
+    return model_outputs_repository.build_cluster_insights(
+        _build_admin_student_metrics_list(),
+        cluster_name_resolver=_cluster_label_from_value,
+    )
+
+
+def _build_model_summary_payload():
+    if model_outputs_repository is None:
+        return {
+            "metrics": [],
+            "importance": [],
+            "description": ["模型输出目录不可用，暂时无法展示统一模型说明。"],
+        }
+    return model_outputs_repository.build_risk_model_summary()
+
+
 def register_account():
     data = request.json or {}
     student_id = str(data.get('studentId', '')).strip()
@@ -2318,66 +2390,136 @@ def get_chart_file_v2(chart_file):
     return send_file(chart_path, mimetype='image/png')
 
 
-@app.route('/api/admin/analysis/results', methods=['GET'])
+def get_admin_dashboard_overview_v2():
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_admin_dashboard_overview_payload()})
+
+
+def get_admin_cluster_insights_v2():
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_admin_cluster_insights_payload()})
+
+
+def get_admin_model_summary_v2():
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_model_summary_payload()})
+
+
+def get_admin_model_importance_v2():
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_model_summary_payload()})
+
+
+def get_admin_task_history_v2():
+    return jsonify({'code': 200, 'message': 'success', 'data': batch_task_store.list_tasks()})
+
+
+def submit_batch_predict_v2():
+    data = request.json or {}
+    file_name = str(data.get('fileName') or '').strip()
+    task = batch_task_store.submit(file_name)
+    return jsonify({'code': 200, 'message': 'success', 'data': task})
+
+
 def get_admin_analysis_results():
     return jsonify({'code': 200, 'message': 'success', 'data': _build_admin_analysis_results_payload()})
 
 
-@app.route('/api/auth/login', methods=['POST'])
 def login():
     return login_v2()
 
 
-@app.route('/api/auth/me', methods=['GET'])
 def get_current_user():
     return get_current_user_v2()
 
 
-@app.route('/api/student/dashboard', methods=['GET'])
 def get_student_dashboard():
     return get_student_dashboard_v2()
 
 
-@app.route('/api/student/profile', methods=['GET'])
 def get_student_profile():
     return get_student_profile_v2()
 
 
-@app.route('/api/student/trend', methods=['GET'])
-@app.route('/api/student/trends', methods=['GET'])
 def get_student_trends():
     return get_student_trends_v2()
 
 
-@app.route('/api/student/report', methods=['GET'])
 def get_student_report():
     return get_student_report_v2()
 
 
-@app.route('/api/student/advice', methods=['GET'])
-@app.route('/api/student/recommendations', methods=['GET'])
 def get_student_recommendations():
     return get_student_recommendations_v2()
 
 
-@app.route('/api/student/compare/group', methods=['GET'])
 def get_student_group_compare():
     return get_student_group_compare_v2()
 
 
-@app.route('/api/admin/student/<student_id>', methods=['GET'])
 def get_admin_student_detail(student_id):
     return get_admin_student_detail_v2(student_id)
 
 
-@app.route('/api/admin/risk/list', methods=['GET'])
 def get_risk_students():
     return get_risk_students_v2()
 
 
-@app.route('/api/admin/export/charts/<chart_file>', methods=['GET'])
 def get_chart_file(chart_file):
     return get_chart_file_v2(chart_file)
+
+
+def get_dashboard_overview():
+    return get_admin_dashboard_overview_v2()
+
+
+def get_cluster_insights():
+    return get_admin_cluster_insights_v2()
+
+
+def get_model_summary():
+    return get_admin_model_summary_v2()
+
+
+def get_model_importance():
+    return get_admin_model_importance_v2()
+
+
+def get_task_history():
+    return get_admin_task_history_v2()
+
+
+def submit_batch_predict():
+    return submit_batch_predict_v2()
+
+
+app.register_blueprint(
+    create_auth_blueprint(
+        register_account=register_account,
+        login=login,
+        get_current_user=get_current_user,
+    )
+)
+app.register_blueprint(
+    create_student_blueprint(
+        get_student_dashboard=get_student_dashboard,
+        get_student_profile=get_student_profile,
+        get_student_trends=get_student_trends,
+        get_student_report=get_student_report,
+        get_student_recommendations=get_student_recommendations,
+        get_student_group_compare=get_student_group_compare,
+    )
+)
+app.register_blueprint(
+    create_admin_blueprint(
+        get_admin_analysis_results=get_admin_analysis_results,
+        get_dashboard_overview=get_dashboard_overview,
+        get_cluster_insights=get_cluster_insights,
+        get_admin_student_detail=get_admin_student_detail,
+        get_risk_students=get_risk_students,
+        get_chart_file=get_chart_file,
+        get_model_summary=get_model_summary,
+        get_model_importance=get_model_importance,
+        get_task_history=get_task_history,
+        submit_batch_predict=submit_batch_predict,
+    )
+)
 
 if __name__ == '__main__':
     debug_mode = str(os.getenv('FLASK_DEBUG', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
