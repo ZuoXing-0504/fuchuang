@@ -11,6 +11,7 @@ onMounted(async () => {
 
 const quickLinks = [
   { path: '/profile', title: '我的画像', description: '查看当前画像、细分标签和多维表现', action: '进入画像' },
+  { path: '/predict', title: '在线预测', description: '修改关键输入项，自己跑一遍奖学金、四六级和发展预测', action: '开始预测' },
   { path: '/compare', title: '群体对比', description: '看看自己与所属群体、全样本的差异位置', action: '查看对比' },
   { path: '/report', title: '个性化报告', description: '集中查看判断依据、解释结论和后续建议', action: '查看报告' },
   { path: '/analysis', title: '全样本分析', description: '浏览全体学生的分析图表与关键结论', action: '查看图表' }

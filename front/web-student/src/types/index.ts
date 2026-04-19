@@ -183,3 +183,48 @@ export interface StudentRecommendationsData {
   studentId?: string;
   recommendations: RecommendationItem[];
 }
+
+export interface StudentPredictionField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | string;
+  unit?: string;
+  defaultValue?: string | number | null;
+  placeholder?: string;
+}
+
+export interface StudentPredictionGroup {
+  title: string;
+  description: string;
+  fields: StudentPredictionField[];
+}
+
+export interface StudentPredictionSchema {
+  studentId?: string;
+  groups: StudentPredictionGroup[];
+  notes: string[];
+}
+
+export interface StudentPredictionCard {
+  label: string;
+  value: string;
+  description: string;
+  tone: 'primary' | 'success' | 'warning' | 'danger' | string;
+}
+
+export interface StudentPredictionSectionItem {
+  label: string;
+  value: string;
+}
+
+export interface StudentPredictionSection {
+  title: string;
+  items: StudentPredictionSectionItem[];
+}
+
+export interface StudentPredictionResult {
+  studentId?: string;
+  cards: StudentPredictionCard[];
+  sections: StudentPredictionSection[];
+  notes: string[];
+}

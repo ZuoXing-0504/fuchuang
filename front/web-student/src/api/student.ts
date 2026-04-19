@@ -1,5 +1,5 @@
-import type { StudentCompareData, StudentHomeData, StudentProfileData, StudentRecommendationsData, StudentReportData } from '../types';
-import { adaptRecommendationGroups, adaptStudentCompare, adaptStudentHome, adaptStudentProfile, adaptStudentReport, unwrapPayload } from './adapter';
+import type { StudentCompareData, StudentHomeData, StudentPredictionResult, StudentPredictionSchema, StudentProfileData, StudentRecommendationsData, StudentReportData } from '../types';
+import { adaptRecommendationGroups, adaptStudentCompare, adaptStudentHome, adaptStudentPredictionResult, adaptStudentPredictionSchema, adaptStudentProfile, adaptStudentReport, unwrapPayload } from './adapter';
 import { request } from '../utils/request';
 
 export function getStudentHome() {
@@ -43,6 +43,19 @@ export function getStudentRecommendations() {
 export function getStudentCompare() {
   return request<StudentCompareData>('/api/student/compare/group', {
     adapter: adaptStudentCompare
+  });
+}
+
+export function getStudentPredictionSchema() {
+  return request<StudentPredictionSchema>('/api/student/predict/schema', {
+    adapter: adaptStudentPredictionSchema
+  });
+}
+
+export function submitStudentManualPredict(values: Record<string, string | number | null>) {
+  return request<StudentPredictionResult>('/api/student/predict/manual', {
+    options: { method: 'POST', body: JSON.stringify({ values }) },
+    adapter: adaptStudentPredictionResult
   });
 }
 

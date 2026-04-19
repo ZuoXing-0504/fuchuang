@@ -9,7 +9,7 @@ export function getDashboardOverview() {
 }
 
 export function getWarnings() {
-  return request<StudentMetrics[]>('/api/admin/risk/list', {
+  return request<StudentMetrics[]>('/api/admin/risk/list?page=1&page_size=5000', {
     adapter: (raw) => {
       const rows = adaptStudentMetricsList(raw);
       const payload = unwrapPayload<Record<string, unknown>>(raw) ?? {};

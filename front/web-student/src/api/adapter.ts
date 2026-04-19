@@ -1,6 +1,8 @@
 import type {
   RecommendationItem,
   StudentHomeData,
+  StudentPredictionResult,
+  StudentPredictionSchema,
   StudentProfileData,
   StudentRecommendationsData,
   StudentReportData,
@@ -111,6 +113,25 @@ export function adaptStudentCompare(payload: unknown): StudentCompareData {
     rankingCards: normalizeRankingCards(row.rankingCards),
     clusterTraits: normalizeStrings(row.clusterTraits),
     explanations: normalizeStrings(row.explanations),
+  };
+}
+
+export function adaptStudentPredictionSchema(payload: unknown): StudentPredictionSchema {
+  const row = unwrapPayload<UnknownRecord>(payload) ?? {};
+  return {
+    studentId: getString(row, ['studentId', 'student_id'], ''),
+    groups: normalizePredictionGroups(row.groups),
+    notes: normalizeStrings(row.notes)
+  };
+}
+
+export function adaptStudentPredictionResult(payload: unknown): StudentPredictionResult {
+  const row = unwrapPayload<UnknownRecord>(payload) ?? {};
+  return {
+    studentId: getString(row, ['studentId', 'student_id'], ''),
+    cards: normalizePredictionCards(row.cards),
+    sections: normalizePredictionSections(row.sections),
+    notes: normalizeStrings(row.notes)
   };
 }
 
@@ -292,6 +313,68 @@ function normalizeRecommendationItems(payload: unknown): RecommendationItem[] {
       priority: getString(row, ['priority', 'level'], 'medium') as RecommendationItem['priority'],
       title: getString(row, ['title', 'name'], '成长建议'),
       description: getString(row, ['description', 'desc', 'summary'], '')
+    };
+  });
+}
+
+function normalizePredictionGroups(payload: unknown): StudentPredictionSchema['groups'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      title: getString(row, ['title'], '预测字段'),
+      description: getString(row, ['description'], ''),
+      fields: normalizePredictionFields(row.fields)
+    };
+  });
+}
+
+function normalizePredictionFields(payload: unknown): StudentPredictionSchema['groups'][number]['fields'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      key: getString(row, ['key'], ''),
+      label: getString(row, ['label'], '字段'),
+      type: getString(row, ['type'], 'text'),
+      unit: getString(row, ['unit'], ''),
+      defaultValue: row.defaultValue as string | number | null | undefined,
+      placeholder: getString(row, ['placeholder'], '')
+    };
+  });
+}
+
+function normalizePredictionCards(payload: unknown): StudentPredictionResult['cards'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      label: getString(row, ['label'], '结果'),
+      value: getString(row, ['value'], ''),
+      description: getString(row, ['description'], ''),
+      tone: getString(row, ['tone'], 'primary')
+    };
+  });
+}
+
+function normalizePredictionSections(payload: unknown): StudentPredictionResult['sections'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      title: getString(row, ['title'], '分组'),
+      items: normalizePredictionSectionItems(row.items)
+    };
+  });
+}
+
+function normalizePredictionSectionItems(payload: unknown): StudentPredictionResult['sections'][number]['items'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      label: getString(row, ['label'], '字段'),
+      value: getString(row, ['value'], '')
     };
   });
 }

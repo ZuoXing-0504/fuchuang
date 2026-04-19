@@ -37,6 +37,11 @@ function tableToneLabel(title: string) {
   return '数据';
 }
 
+function isMissingValue(value?: string) {
+  const text = String(value ?? '').trim();
+  return text === '暂无原始记录' || text === '模型未返回' || text.includes('原始表中缺失') || text.includes('原表缺失');
+}
+
 const scoreFormulaCards = computed(() => {
   const scoreFormulaKeys = ['学习投入展示分', '行为规律展示分', '健康发展展示分', '综合发展展示分', '风险安全展示分'];
   return (data.value?.featureFormulas ?? []).filter((item) => scoreFormulaKeys.includes(item.feature));
@@ -138,7 +143,7 @@ const scoreFormulaCards = computed(() => {
               <div class="detail-label">{{ item.label }}</div>
               <div class="detail-note">{{ item.note }}</div>
             </div>
-            <div class="detail-value">{{ item.value }}</div>
+            <div class="detail-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</div>
           </div>
         </div>
       </el-card>
@@ -156,7 +161,7 @@ const scoreFormulaCards = computed(() => {
               <div class="detail-label">{{ item.label }}</div>
               <div class="detail-note">{{ item.note }}</div>
             </div>
-            <div class="detail-value">{{ item.value }}</div>
+            <div class="detail-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</div>
           </div>
         </div>
       </el-card>
@@ -176,7 +181,7 @@ const scoreFormulaCards = computed(() => {
             </div>
             <div class="detail-side">
               <span class="detail-effect">{{ item.effect }}</span>
-              <div class="detail-value">{{ item.value }}</div>
+              <div class="detail-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</div>
             </div>
           </div>
         </div>
@@ -285,7 +290,11 @@ const scoreFormulaCards = computed(() => {
         </template>
         <el-table :data="table.rows" stripe border>
           <el-table-column prop="label" label="特征名" min-width="140" />
-          <el-table-column prop="value" label="当前值" min-width="120" />
+          <el-table-column label="当前值" min-width="140">
+            <template #default="{ row }">
+              <span :class="['table-value', { missing: isMissingValue(row.value) }]">{{ row.value }}</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="source" label="来源" min-width="150" />
           <el-table-column label="参与判断" width="100">
             <template #default="{ row }">
@@ -542,6 +551,11 @@ const scoreFormulaCards = computed(() => {
   font-weight: 800;
   color: #1677ff;
   white-space: nowrap;
+}
+
+.detail-value.missing,
+.table-value.missing {
+  color: #c2410c;
 }
 
 .detail-effect,

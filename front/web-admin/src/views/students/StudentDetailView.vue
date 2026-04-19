@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getStudentDetail } from '../../api/admin';
 import type { StudentDetail } from '../../types';
+import { getProfileCategoryExplanation, getProfileSubtypeExplanation } from '../../utils/profileSubtype';
 
 type DetailPanelKey = 'profile' | 'evidence' | 'metrics' | 'risk' | 'pipeline';
 
@@ -13,6 +14,7 @@ const searchStudentId = ref(String(route.params.id ?? ''));
 const panelDrawerVisible = ref(false);
 const activePanel = ref<DetailPanelKey>('profile');
 const formulaDrawerVisible = ref(false);
+const profileExplainVisible = ref(false);
 
 async function loadDetail(studentId: string) {
   if (!studentId) {
@@ -111,6 +113,23 @@ const scoreFormulaCards = computed(() => {
   return (detail.value?.featureFormulas ?? []).filter((item) => scoreFormulaKeys.includes(item.feature));
 });
 
+const profileExplainBlocks = computed(() => {
+  if (!detail.value) return [];
+  const blocks: Array<{ title: string; body: string }> = [];
+  const categoryText = getProfileCategoryExplanation(detail.value.profileCategory);
+  const subtypeText = getProfileSubtypeExplanation(detail.value.profileSubtype);
+  if (categoryText) {
+    blocks.push({ title: `主画像：${detail.value.profileCategory}`, body: categoryText });
+  }
+  if (subtypeText && detail.value.profileSubtype) {
+    blocks.push({ title: `细分子类：${detail.value.profileSubtype}`, body: subtypeText });
+  }
+  if (detail.value.profileExplanation) {
+    blocks.push({ title: '系统个体解释', body: detail.value.profileExplanation });
+  }
+  return blocks;
+});
+
 function handleSearch() {
   const value = searchStudentId.value.trim();
   if (!value) {
@@ -130,6 +149,11 @@ function openPanel(panel: DetailPanelKey) {
   activePanel.value = panel;
   panelDrawerVisible.value = true;
 }
+
+function isMissingValue(value?: string) {
+  const text = String(value ?? '').trim();
+  return text === '暂无原始记录' || text === '模型未返回' || text.includes('原始表中缺失') || text.includes('原表缺失');
+}
 </script>
 
 <template>
@@ -141,6 +165,7 @@ function openPanel(panel: DetailPanelKey) {
       </div>
       <div class="header-actions">
         <el-input v-model="searchStudentId" placeholder="输入学号直接查询" clearable style="width: 240px" @keyup.enter="handleSearch" />
+        <el-button @click="profileExplainVisible = true">画像说明</el-button>
         <el-button @click="formulaDrawerVisible = true">得分公式</el-button>
         <el-button @click="openReport">完整报告</el-button>
         <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -230,7 +255,7 @@ function openPanel(panel: DetailPanelKey) {
             </div>
             <div class="evidence-side">
               <span class="evidence-effect">{{ item.effect }}</span>
-              <span class="snapshot-value">{{ item.value }}</span>
+              <span class="snapshot-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</span>
             </div>
           </div>
         </div>
@@ -279,7 +304,7 @@ function openPanel(panel: DetailPanelKey) {
                   <div class="snapshot-label">{{ item.label }}</div>
                   <div class="snapshot-note">{{ item.note }}</div>
                 </div>
-                <div class="snapshot-value">{{ item.value }}</div>
+                <div class="snapshot-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</div>
               </div>
             </div>
           </el-collapse-item>
@@ -290,7 +315,7 @@ function openPanel(panel: DetailPanelKey) {
                   <div class="snapshot-label">{{ item.label }}</div>
                   <div class="snapshot-note">{{ item.note }}</div>
                 </div>
-                <div class="snapshot-value">{{ item.value }}</div>
+                <div class="snapshot-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</div>
               </div>
             </div>
           </el-collapse-item>
@@ -370,6 +395,18 @@ function openPanel(panel: DetailPanelKey) {
         <div v-if="!scoreFormulaCards.length" class="loading-box">当前学生暂无可展示的核心分数公式。</div>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="profileExplainVisible" title="画像说明" width="560px">
+      <div class="explain-dialog">
+        <div v-for="item in profileExplainBlocks" :key="item.title" class="explain-card">
+          <div class="explain-title">{{ item.title }}</div>
+          <div class="explain-copy">{{ item.body }}</div>
+        </div>
+        <div class="explain-note">
+          主画像和风险等级不是同一口径：主画像看的是学生更接近哪一类群体，风险等级看的是当前风险概率。
+        </div>
+      </div>
+    </el-dialog>
   </section>
 </template>
 
@@ -603,6 +640,38 @@ function openPanel(panel: DetailPanelKey) {
   font-weight: 900;
   color: #0f172a;
   white-space: nowrap;
+}
+
+.snapshot-value.missing {
+  color: #c2410c;
+  font-size: 15px;
+}
+
+.explain-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.explain-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px solid #e2edf9;
+}
+
+.explain-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.explain-copy,
+.explain-note {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #475569;
 }
 
 .evidence-effect,

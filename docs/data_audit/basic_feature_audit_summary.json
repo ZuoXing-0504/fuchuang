@@ -1,0 +1,246 @@
+{
+  "total_features_checked": 69,
+  "perfect_match_features": 21,
+  "imperfect_features": [
+    {
+      "feature": "出馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "周末到馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "图书馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "图书馆活跃天数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "晚间到馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "白天到馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "进馆次数",
+      "mismatch_count": 2022,
+      "match_rate": 0.1912
+    },
+    {
+      "feature": "800米",
+      "mismatch_count": 1910,
+      "match_rate": 0.236
+    },
+    {
+      "feature": "仰卧起坐",
+      "mismatch_count": 1910,
+      "match_rate": 0.236
+    },
+    {
+      "feature": "竞赛次数",
+      "mismatch_count": 1714,
+      "match_rate": 0.3144
+    },
+    {
+      "feature": "出门次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "周末门禁次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "夜间次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "白天门禁次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "进门次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "门禁次数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "门禁活跃天数",
+      "mismatch_count": 1551,
+      "match_rate": 0.3796
+    },
+    {
+      "feature": "奖学金次数",
+      "mismatch_count": 1023,
+      "match_rate": 0.5908
+    },
+    {
+      "feature": "奖学金金额",
+      "mismatch_count": 1023,
+      "match_rate": 0.5908
+    },
+    {
+      "feature": "1000米",
+      "mismatch_count": 659,
+      "match_rate": 0.7364
+    },
+    {
+      "feature": "引体向上",
+      "mismatch_count": 658,
+      "match_rate": 0.7368
+    },
+    {
+      "feature": "社团次数",
+      "mismatch_count": 474,
+      "match_rate": 0.8104
+    },
+    {
+      "feature": "社团活跃天数",
+      "mismatch_count": 474,
+      "match_rate": 0.8104
+    },
+    {
+      "feature": "最近30天跑步次数",
+      "mismatch_count": 222,
+      "match_rate": 0.9112
+    },
+    {
+      "feature": "最近60天跑步次数",
+      "mismatch_count": 168,
+      "match_rate": 0.9328
+    },
+    {
+      "feature": "最近90天跑步次数",
+      "mismatch_count": 154,
+      "match_rate": 0.9384
+    },
+    {
+      "feature": "作业完成次数",
+      "mismatch_count": 113,
+      "match_rate": 0.9548
+    },
+    {
+      "feature": "作业平均分",
+      "mismatch_count": 113,
+      "match_rate": 0.9548
+    },
+    {
+      "feature": "作业提交次数",
+      "mismatch_count": 113,
+      "match_rate": 0.9548
+    },
+    {
+      "feature": "立定跳远",
+      "mismatch_count": 68,
+      "match_rate": 0.9728
+    },
+    {
+      "feature": "50米",
+      "mismatch_count": 67,
+      "match_rate": 0.9732
+    },
+    {
+      "feature": "BMI",
+      "mismatch_count": 65,
+      "match_rate": 0.974
+    },
+    {
+      "feature": "坐位体前屈",
+      "mismatch_count": 65,
+      "match_rate": 0.974
+    },
+    {
+      "feature": "肺活量",
+      "mismatch_count": 65,
+      "match_rate": 0.974
+    },
+    {
+      "feature": "英语平均分",
+      "mismatch_count": 64,
+      "match_rate": 0.9744
+    },
+    {
+      "feature": "英语成绩",
+      "mismatch_count": 64,
+      "match_rate": 0.9744
+    },
+    {
+      "feature": "英语考试次数",
+      "mismatch_count": 64,
+      "match_rate": 0.9744
+    },
+    {
+      "feature": "体测分",
+      "mismatch_count": 60,
+      "match_rate": 0.976
+    },
+    {
+      "feature": "上网时长",
+      "mismatch_count": 57,
+      "match_rate": 0.9772
+    },
+    {
+      "feature": "月均上网时长",
+      "mismatch_count": 57,
+      "match_rate": 0.9772
+    },
+    {
+      "feature": "锻炼周数",
+      "mismatch_count": 56,
+      "match_rate": 0.9776
+    },
+    {
+      "feature": "锻炼均次",
+      "mismatch_count": 56,
+      "match_rate": 0.9776
+    },
+    {
+      "feature": "锻炼学期数",
+      "mismatch_count": 56,
+      "match_rate": 0.9776
+    },
+    {
+      "feature": "锻炼次数",
+      "mismatch_count": 56,
+      "match_rate": 0.9776
+    },
+    {
+      "feature": "跑步学期数",
+      "mismatch_count": 32,
+      "match_rate": 0.9872
+    },
+    {
+      "feature": "跑步次数",
+      "mismatch_count": 32,
+      "match_rate": 0.9872
+    },
+    {
+      "feature": "跑步活跃天数",
+      "mismatch_count": 32,
+      "match_rate": 0.9872
+    },
+    {
+      "feature": "综合成绩",
+      "mismatch_count": 1,
+      "match_rate": 0.9996
+    }
+  ]
+}

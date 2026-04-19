@@ -152,10 +152,50 @@ export interface FeatureImportance {
   importance: number;
 }
 
+export interface ModelOverviewCard {
+  label: string;
+  value: string;
+  tone: 'primary' | 'success' | 'warning' | 'danger' | string;
+  note?: string;
+}
+
+export interface ModelMetricValue {
+  key: string;
+  label: string;
+  value: number;
+}
+
+export interface ModelTaskRow {
+  model: string;
+  values: ModelMetricValue[];
+}
+
+export interface ModelTaskSummary {
+  taskKey: string;
+  taskName: string;
+  taskType: 'binary' | 'multiclass' | 'regression' | string;
+  description: string;
+  bestModel: string;
+  primaryMetricKey: string;
+  primaryMetricLabel: string;
+  primaryMetricValue?: number;
+  secondaryMetricKey: string;
+  secondaryMetricLabel: string;
+  secondaryMetricValue?: number;
+  rows: ModelTaskRow[];
+  importance: FeatureImportance[];
+  status: 'online' | 'offline_evaluation' | string;
+  statusLabel: string;
+  onlineAvailable: boolean;
+  source: string;
+}
+
 export interface ModelSummary {
   metrics: ModelMetric[];
   importance: FeatureImportance[];
   description: string[];
+  overviewCards?: ModelOverviewCard[];
+  tasks?: ModelTaskSummary[];
 }
 
 export interface BatchTask {

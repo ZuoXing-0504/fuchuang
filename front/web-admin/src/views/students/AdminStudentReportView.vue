@@ -110,6 +110,11 @@ function backToDetail() {
   }
   router.push(`/students/${detail.value.studentId}`);
 }
+
+function isMissingValue(value?: string) {
+  const text = String(value ?? '').trim();
+  return text === '暂无原始记录' || text === '模型未返回' || text.includes('原始表中缺失') || text.includes('原表缺失');
+}
 </script>
 
 <template>
@@ -224,7 +229,7 @@ function backToDetail() {
                 </div>
                 <div class="evidence-side">
                   <span class="evidence-effect">{{ item.effect }}</span>
-                  <span class="evidence-value">{{ item.value }}</span>
+                  <span class="evidence-value" :class="{ missing: isMissingValue(item.value) }">{{ item.value }}</span>
                 </div>
               </div>
             </div>
@@ -303,7 +308,11 @@ function backToDetail() {
           </div>
           <el-table :data="table.rows" stripe border class="feature-table">
             <el-table-column prop="label" label="特征名" min-width="150" />
-            <el-table-column prop="value" label="当前值" min-width="120" />
+            <el-table-column label="当前值" min-width="140">
+              <template #default="{ row }">
+                <span :class="['table-value', { missing: isMissingValue(row.value) }]">{{ row.value }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="source" label="数据来源" min-width="150" />
             <el-table-column label="参与预测" width="100">
               <template #default="{ row }">
@@ -553,6 +562,12 @@ function backToDetail() {
 .evidence-value {
   font-weight: 700;
   color: #0f172a;
+}
+
+.evidence-value.missing,
+.table-value.missing,
+.info-value.missing {
+  color: #c2410c;
 }
 
 .step-index {

@@ -7,14 +7,27 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
+type NavIconKey = 'home' | 'warning' | 'compare' | 'tasks' | 'models' | 'analysis' | 'settings';
+
 const navItems = [
-  { path: '/dashboard', label: '首页', icon: '首' },
-  { path: '/warnings', label: '风险名单', icon: '名' },
-  { path: '/profiles', label: '院系对比', icon: '比' },
-  { path: '/tasks', label: '干预工作台', icon: '台' },
-  { path: '/analysis-results', label: '分析成果', icon: '析' },
-  { path: '/settings', label: '设置中心', icon: '设' }
+  { path: '/dashboard', label: '首页', icon: 'home' as NavIconKey },
+  { path: '/warnings', label: '风险名单', icon: 'warning' as NavIconKey },
+  { path: '/profiles', label: '院系对比', icon: 'compare' as NavIconKey },
+  { path: '/tasks', label: '干预工作台', icon: 'tasks' as NavIconKey },
+  { path: '/models', label: '预测模块', icon: 'models' as NavIconKey },
+  { path: '/analysis-results', label: '分析成果', icon: 'analysis' as NavIconKey },
+  { path: '/settings', label: '设置中心', icon: 'settings' as NavIconKey }
 ];
+
+const navIconPaths: Record<NavIconKey, string[]> = {
+  home: ['M4 10.5 12 4l8 6.5', 'M6.5 9.5V20h11V9.5', 'M10 20v-5h4v5'],
+  warning: ['M12 4 20 18H4L12 4Z', 'M12 9v4', 'M12 16h.01'],
+  compare: ['M6 6h5v12H6z', 'M13 9h5v9h-5z'],
+  tasks: ['M8 5h8', 'M6 8h12v10H6z', 'M9 12h6', 'M9 15h4'],
+  models: ['M5 17l4-4 3 3 7-7', 'M16 9h3v3'],
+  analysis: ['M6 18V11', 'M11 18V7', 'M16 18v-4'],
+  settings: ['M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z', 'M12 3v2.2', 'M12 18.8V21', 'M4.9 4.9l1.6 1.6', 'M17.5 17.5l1.6 1.6', 'M3 12h2.2', 'M18.8 12H21', 'M4.9 19.1l1.6-1.6', 'M17.5 6.5l1.6-1.6']
+};
 
 const activeNav = computed(() => {
   if (route.path.startsWith('/students/')) {
@@ -22,6 +35,9 @@ const activeNav = computed(() => {
   }
   if (route.path.startsWith('/analysis-results')) {
     return '分析成果';
+  }
+  if (route.path.startsWith('/models')) {
+    return '预测模块';
   }
   const match = navItems.find((item) => route.path.startsWith(item.path));
   return match?.label ?? '首页';
@@ -37,7 +53,14 @@ function handleLogout() {
   <div class="app-shell">
     <aside class="side-nav">
       <div class="brand-block">
-        <div class="brand-icon">AC</div>
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none">
+            <rect x="6" y="10" width="36" height="28" rx="12" />
+            <path d="M15 30V20l9-6 9 6v10" />
+            <path d="M20 24h8" />
+            <path d="M24 19.5V28" />
+          </svg>
+        </div>
         <div>
           <div class="brand-title">校园行为管理</div>
           <div class="brand-subtitle">Admin Console</div>
@@ -52,7 +75,11 @@ function handleLogout() {
           :class="{ active: route.path.startsWith(item.path) }"
           @click="router.push(item.path)"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path v-for="segment in navIconPaths[item.icon]" :key="segment" :d="segment" />
+            </svg>
+          </span>
           <span class="nav-label">{{ item.label }}</span>
         </button>
       </nav>
@@ -120,8 +147,16 @@ function handleLogout() {
   place-items: center;
   background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #fff;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.brand-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .brand-title {
@@ -173,14 +208,21 @@ function handleLogout() {
   display: grid;
   place-items: center;
   background: rgba(22, 119, 255, 0.1);
-  font-size: 13px;
-  font-weight: 900;
   color: #1677ff;
 }
 
 .nav-item.active .nav-icon {
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
+}
+
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .nav-label {

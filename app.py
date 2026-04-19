@@ -265,6 +265,17 @@ def load_model_package(filename):
         raise FileNotFoundError(f"找不到模型文件: {path}")
     return joblib.load(path)
 
+
+def load_optional_model_package(filename):
+    path = os.path.join(MODEL_DIR, filename)
+    if not os.path.exists(path):
+        return None
+    try:
+        return joblib.load(path)
+    except Exception as exc:
+        print(f"可选模型加载失败 {filename}: {exc}")
+        return None
+
 def load_json(filename):
     path = os.path.join(MODEL_DIR, filename)
     if not os.path.exists(path):
@@ -288,6 +299,11 @@ try:
 except Exception as e:
     print(f"模型加载失败: {e}")
     model_loaded = False
+
+learning_engagement_pkg = load_optional_model_package("learning_engagement_model.joblib")
+development_pkg = load_optional_model_package("development_model.joblib")
+cet4_pkg = load_optional_model_package("cet4_model.joblib")
+cet6_pkg = load_optional_model_package("cet6_model.joblib")
 
 # 棰勬祴鐩稿叧鍑芥暟
 def apply_category_mapping(df, category_mappings):
@@ -439,6 +455,30 @@ def predict_all(input_dict):
                     "上升": 0.2
                 }
             },
+            "learning_engagement": {
+                "pred_label": "中投入",
+                "prob_map": {
+                    "低投入": 0.2,
+                    "中投入": 0.6,
+                    "高投入": 0.2
+                }
+            },
+            "development": {
+                "pred_label": "中发展",
+                "prob_map": {
+                    "低发展": 0.2,
+                    "中发展": 0.6,
+                    "高发展": 0.2
+                }
+            },
+            "cet4": {
+                "pred_label": 1,
+                "prob": 0.7
+            },
+            "cet6": {
+                "pred_label": 0,
+                "prob": 0.45
+            },
             "score_regression": {
                 "pred_value": 75.5
             },
@@ -454,6 +494,14 @@ def predict_all(input_dict):
     result["performance"] = predict_multiclass(performance_pkg, input_dict)
     result["health"] = predict_multiclass(health_pkg, input_dict)
     result["change_trend"] = predict_multiclass(change_trend_pkg, input_dict)
+    if learning_engagement_pkg is not None:
+        result["learning_engagement"] = predict_multiclass(learning_engagement_pkg, input_dict)
+    if development_pkg is not None:
+        result["development"] = predict_multiclass(development_pkg, input_dict)
+    if cet4_pkg is not None:
+        result["cet4"] = predict_binary(cet4_pkg, input_dict)
+    if cet6_pkg is not None:
+        result["cet6"] = predict_binary(cet6_pkg, input_dict)
     result["score_regression"] = predict_regression(score_reg_pkg, input_dict)
     result["cluster"] = predict_cluster(cluster_pkg, input_dict)
     return result
@@ -1118,14 +1166,23 @@ def _safe_number(value, digits=1):
         return None
 
 
-def _append_snapshot_item(bucket, label, value, unit="", note=""):
+RAW_MISSING_TEXT = "暂无原始记录"
+MODEL_MISSING_TEXT = "模型未返回"
+
+
+def _append_snapshot_item(bucket, label, value, unit="", note="", missing_text=RAW_MISSING_TEXT):
     if value is None:
-        return
-    display_value = f"{value}{unit}" if unit else str(value)
+        display_value = missing_text
+        final_note = note
+        if missing_text == RAW_MISSING_TEXT:
+            final_note = f"{note} 当前字段在原始表中缺失。".strip()
+    else:
+        display_value = f"{value}{unit}" if unit else str(value)
+        final_note = note
     bucket.append({
         "label": label,
         "value": display_value,
-        "note": note,
+        "note": final_note,
     })
 
 
@@ -1315,6 +1372,129 @@ FEATURE_UNITS = {
 }
 
 FEATURE_LABEL_MAP = {alias: labels[-1] for alias, labels in STUDENT_FEATURE_COLUMN_CANDIDATES.items()}
+BASIC_FEATURE_KEYS = {
+    "gender",
+    "ethnicity",
+    "political_status",
+    "birthplace",
+    "internet_duration",
+    "avg_monthly_internet_duration",
+    "running_count",
+    "running_active_days",
+    "running_terms",
+    "recent_30_running",
+    "recent_60_running",
+    "recent_90_running",
+    "workout_count",
+    "workout_average",
+    "workout_weeks",
+    "workout_terms",
+    "body_score",
+    "BMI",
+    "lung_capacity",
+    "sprint_50m",
+    "standing_long_jump",
+    "sit_and_reach",
+    "run_800m",
+    "run_1000m",
+    "sit_ups",
+    "pull_ups",
+    "video_learning_duration",
+    "video_learning_mean",
+    "quiz_average",
+    "assignment_average",
+    "class_assignment_average",
+    "exam_average",
+    "assignment_submit_count",
+    "assignment_finish_count",
+    "library_visit_count",
+    "library_entry_count",
+    "library_exit_count",
+    "library_active_days",
+    "night_library_count",
+    "weekend_library_count",
+    "daytime_library_count",
+    "gate_access_count",
+    "gate_entry_count",
+    "gate_exit_count",
+    "night_activity_count",
+    "weekend_gate_count",
+    "daytime_gate_count",
+    "gate_active_days",
+    "discussion_count",
+    "reply_count",
+    "online_visits",
+    "online_visits_mean",
+    "live_learning_duration",
+    "extended_learning_duration",
+    "paper_participation_count",
+    "answer_participation_count",
+    "peer_review_count",
+    "club_count",
+    "club_active_days",
+    "competition_count",
+    "english_score",
+    "english_average",
+    "english_exam_count",
+    "overall_score",
+    "scholarship_count",
+    "scholarship_amount",
+}
+BASIC_FEATURE_LABELS = {FEATURE_LABEL_MAP.get(key, key) for key in BASIC_FEATURE_KEYS}.union({
+    "性别",
+    "民族",
+    "政治面貌",
+    "出生日期",
+    "籍贯",
+    "学院",
+    "专业",
+})
+MANUAL_PREDICTION_GROUPS = [
+    {
+        "title": "基础身份",
+        "description": "用于补足模型中的分类特征，默认会自动带入你当前账号对应的数据。",
+        "fields": [
+            {"key": "性别", "label": "性别", "type": "text"},
+            {"key": "民族", "label": "民族", "type": "text"},
+            {"key": "政治面貌", "label": "政治面貌", "type": "text"},
+            {"key": "学院", "label": "学院", "type": "text"},
+            {"key": "专业", "label": "专业", "type": "text"},
+        ],
+    },
+    {
+        "title": "行为投入",
+        "description": "这些字段主要影响风险、学习投入和发展类模型。",
+        "fields": [
+            {"key": "上网时长", "label": "上网时长", "type": "number", "unit": "小时"},
+            {"key": "月均上网时长", "label": "月均上网时长", "type": "number", "unit": "小时"},
+            {"key": "门禁次数", "label": "门禁次数", "type": "number", "unit": "次"},
+            {"key": "图书馆次数", "label": "图书馆次数", "type": "number", "unit": "次"},
+            {"key": "跑步次数", "label": "跑步次数", "type": "number", "unit": "次"},
+            {"key": "锻炼次数", "label": "锻炼次数", "type": "number", "unit": "次"},
+            {"key": "视频学习时长", "label": "视频学习时长", "type": "number", "unit": "小时"},
+            {"key": "讨论数", "label": "讨论数", "type": "number", "unit": "次"},
+            {"key": "回帖数", "label": "回帖数", "type": "number", "unit": "次"},
+            {"key": "竞赛次数", "label": "竞赛次数", "type": "number", "unit": "次"},
+        ],
+    },
+    {
+        "title": "学业与体测",
+        "description": "这些字段主要影响奖学金、综合成绩、健康和四六级预测。",
+        "fields": [
+            {"key": "体测分", "label": "体测分", "type": "number", "unit": "分"},
+            {"key": "BMI", "label": "BMI", "type": "number"},
+            {"key": "肺活量", "label": "肺活量", "type": "number", "unit": "ml"},
+            {"key": "测验平均分", "label": "测验平均分", "type": "number", "unit": "分"},
+            {"key": "作业平均分", "label": "作业平均分", "type": "number", "unit": "分"},
+            {"key": "考试平均分", "label": "考试平均分", "type": "number", "unit": "分"},
+            {"key": "英语成绩", "label": "英语成绩", "type": "number", "unit": "分"},
+            {"key": "英语平均分", "label": "英语平均分", "type": "number", "unit": "分"},
+            {"key": "综合成绩", "label": "综合成绩", "type": "number", "unit": "分"},
+            {"key": "奖学金次数", "label": "奖学金次数", "type": "number", "unit": "次"},
+            {"key": "奖学金金额", "label": "奖学金金额", "type": "number", "unit": "元"},
+        ],
+    },
+]
 
 data_repository = UnifiedDataRepository(
     Path(BASE_DIR),
@@ -1443,9 +1623,20 @@ def _build_extra_prediction_outputs(feature_record, prediction_record):
             prediction_record.get('change_trend_probabilities'),
             ['上升'],
         )
+    if prediction_record.get('learning_engagement_probabilities'):
+        prediction_record['high_engagement_probability'] = _extract_multiclass_probability(
+            prediction_record.get('learning_engagement_probabilities'),
+            ['高投入'],
+        )
+    if prediction_record.get('development_probabilities'):
+        prediction_record['high_development_probability'] = _extract_multiclass_probability(
+            prediction_record.get('development_probabilities'),
+            ['高发展'],
+        )
 
-    if english_score is not None:
+    if english_score is not None and prediction_record.get('cet4_pass_probability') is None:
         prediction_record.setdefault('cet4_pass_probability', _sigmoid((english_score - 425.0) / 22.0))
+    if english_score is not None and prediction_record.get('cet6_pass_probability') is None:
         prediction_record.setdefault('cet6_pass_probability', _sigmoid((english_score - 500.0) / 22.0))
 
     base_competition = 0.12 + min(competition_count, 3) * 0.18
@@ -1534,6 +1725,12 @@ def _load_prediction_record(student_id):
                     'health_probabilities': online.get('health', {}).get('prob_map'),
                     'change_trend_prediction': online.get('change_trend', {}).get('pred_label'),
                     'change_trend_probabilities': online.get('change_trend', {}).get('prob_map'),
+                    'learning_engagement_prediction': online.get('learning_engagement', {}).get('pred_label'),
+                    'learning_engagement_probabilities': online.get('learning_engagement', {}).get('prob_map'),
+                    'development_prediction': online.get('development', {}).get('pred_label'),
+                    'development_probabilities': online.get('development', {}).get('prob_map'),
+                    'cet4_pass_probability': online.get('cet4', {}).get('prob'),
+                    'cet6_pass_probability': online.get('cet6', {}).get('prob'),
                     'score_prediction': online.get('score_regression', {}).get('pred_value'),
                 })
             except Exception as exc:
@@ -1543,27 +1740,27 @@ def _load_prediction_record(student_id):
     return _build_extra_prediction_outputs(raw_feature, record)
 
 
-def _format_feature_value(value, unit=""):
+def _format_feature_value(value, unit="", missing_text=RAW_MISSING_TEXT):
     if value is None:
-        return "未提供"
+        return missing_text
     if isinstance(value, float):
         if np.isnan(value) or np.isinf(value):
-            return "未提供"
+            return missing_text
         if value.is_integer():
             value = int(value)
         else:
             value = round(value, 4)
     text = str(value)
     if text.lower() in {"nan", "none", ""}:
-        return "未提供"
+        return missing_text
     return f"{text}{unit}" if unit else text
 
 
-def _build_feature_row(label, key, value, *, unit="", source="", used_in_prediction=True, description=""):
+def _build_feature_row(label, key, value, *, unit="", source="", used_in_prediction=True, description="", missing_text=RAW_MISSING_TEXT):
     return {
         "label": label,
         "key": key,
-        "value": _format_feature_value(value, unit),
+        "value": _format_feature_value(value, unit, missing_text=missing_text),
         "unit": unit,
         "source": source,
         "usedInPrediction": used_in_prediction,
@@ -1580,156 +1777,204 @@ def _build_feature_formula_item(feature, formula, explanation, source):
     }
 
 
+def _normalize_manual_input_value(field_type, value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
+    if field_type == "number":
+        return _safe_float(value, None)
+    return text
+
+
+def _build_manual_prediction_schema(student_id):
+    raw_record = _load_train_feature_record(student_id)
+    groups = []
+    for group in MANUAL_PREDICTION_GROUPS:
+        rows = []
+        for field in group["fields"]:
+            key = field["key"]
+            raw_value = _normalize_train_feature_value(key, raw_record.get(key))
+            rows.append({
+                "key": key,
+                "label": field["label"],
+                "type": field["type"],
+                "unit": field.get("unit", ""),
+                "defaultValue": raw_value,
+                "placeholder": f"请输入{field['label']}",
+            })
+        groups.append({
+            "title": group["title"],
+            "description": group["description"],
+            "fields": rows,
+        })
+    return {
+        "studentId": student_id,
+        "groups": groups,
+        "notes": [
+            "系统会优先使用你填写的值，未填写字段自动回退为当前账号已有数据。",
+            "如果某些字段本身没有历史数据，可以只填写你想调整的部分，模型会用默认值完成剩余推断。",
+            "英语四级、六级、学习投入和综合发展预测已经接入独立模型。",
+        ],
+    }
+
+
+def _build_manual_prediction_payload(student_id, overrides):
+    base_record = _load_train_feature_record(student_id)
+    merged = dict(base_record)
+    for group in MANUAL_PREDICTION_GROUPS:
+        for field in group["fields"]:
+            key = field["key"]
+            normalized_value = _normalize_manual_input_value(field["type"], overrides.get(key))
+            if normalized_value is not None:
+                merged[key] = normalized_value
+
+    online = predict_all(merged) if model_loaded else {}
+    prediction = {
+        "risk_probability": online.get("risk", {}).get("prob"),
+        "risk_level": online.get("risk", {}).get("risk_level"),
+        "scholarship_probability": online.get("scholarship", {}).get("prob"),
+        "performance_prediction": online.get("performance", {}).get("pred_label"),
+        "performance_probabilities": online.get("performance", {}).get("prob_map"),
+        "health_prediction": online.get("health", {}).get("pred_label"),
+        "health_probabilities": online.get("health", {}).get("prob_map"),
+        "change_trend_prediction": online.get("change_trend", {}).get("pred_label"),
+        "change_trend_probabilities": online.get("change_trend", {}).get("prob_map"),
+        "learning_engagement_prediction": online.get("learning_engagement", {}).get("pred_label"),
+        "learning_engagement_probabilities": online.get("learning_engagement", {}).get("prob_map"),
+        "development_prediction": online.get("development", {}).get("pred_label"),
+        "development_probabilities": online.get("development", {}).get("prob_map"),
+        "cet4_pass_probability": online.get("cet4", {}).get("prob"),
+        "cet6_pass_probability": online.get("cet6", {}).get("prob"),
+        "score_prediction": online.get("score_regression", {}).get("pred_value"),
+    }
+    prediction = _build_extra_prediction_outputs(merged, prediction)
+
+    def prediction_card(label, value, description, tone="primary"):
+        return {
+            "label": label,
+            "value": value,
+            "description": description,
+            "tone": tone,
+        }
+
+    risk_prob = _probability_percent(prediction.get("risk_probability"))
+    scholarship_prob = _probability_percent(prediction.get("scholarship_probability"))
+    cet4_prob = _probability_percent(prediction.get("cet4_pass_probability"))
+    cet6_prob = _probability_percent(prediction.get("cet6_pass_probability"))
+    high_perf_prob = _probability_percent(prediction.get("high_performance_probability"))
+    high_engagement_prob = _probability_percent(prediction.get("high_engagement_probability"))
+    high_development_prob = _probability_percent(prediction.get("high_development_probability"))
+    stable_health_prob = _probability_percent(prediction.get("stable_health_probability"))
+    trend_up_prob = _probability_percent(prediction.get("improving_trend_probability"))
+    score_prediction = _safe_number(prediction.get("score_prediction"), digits=1)
+
+    cards = [
+        prediction_card("风险等级", prediction.get("risk_level") or "未提供", "风险模型输出的总体等级。", "danger" if prediction.get("risk_level") == "高风险" else "primary"),
+        prediction_card("风险概率", f"{risk_prob}%" if risk_prob is not None else "未提供", "风险分类模型给出的正类概率。", "warning"),
+        prediction_card("奖学金概率", f"{scholarship_prob}%" if scholarship_prob is not None else "未提供", "奖学金获得概率预测。", "success"),
+        prediction_card("综合预测分", f"{score_prediction}分" if score_prediction is not None else "未提供", "综合成绩回归预测结果。", "primary"),
+        prediction_card("学业表现", prediction.get("performance_prediction") or "未提供", "学业表现档次分类结果。", "primary"),
+        prediction_card("健康状态", prediction.get("health_prediction") or "未提供", "健康水平分类结果。", "success"),
+        prediction_card("变化趋势", prediction.get("change_trend_prediction") or "未提供", "变化趋势分类结果。", "warning"),
+        prediction_card("学习投入", prediction.get("learning_engagement_prediction") or "未提供", "学习投入档次分类结果。", "primary"),
+        prediction_card("综合发展", prediction.get("development_prediction") or "未提供", "综合发展档次分类结果。", "primary"),
+        prediction_card("四级通过率", f"{cet4_prob}%" if cet4_prob is not None else "未提供", "英语四级通过概率预测。", "success"),
+        prediction_card("六级通过率", f"{cet6_prob}%" if cet6_prob is not None else "未提供", "英语六级通过概率预测。", "success"),
+    ]
+
+    sections = [
+        {
+            "title": "核心概率",
+            "items": [
+                {"label": "高表现概率", "value": f"{high_perf_prob}%" if high_perf_prob is not None else "未提供"},
+                {"label": "高投入概率", "value": f"{high_engagement_prob}%" if high_engagement_prob is not None else "未提供"},
+                {"label": "高发展概率", "value": f"{high_development_prob}%" if high_development_prob is not None else "未提供"},
+                {"label": "稳定健康概率", "value": f"{stable_health_prob}%" if stable_health_prob is not None else "未提供"},
+                {"label": "上升趋势概率", "value": f"{trend_up_prob}%" if trend_up_prob is not None else "未提供"},
+            ],
+        },
+        {
+            "title": "本次输入摘要",
+            "items": [
+                {"label": field["label"], "value": _format_feature_value(merged.get(field["key"]), field.get("unit", ""))}
+                for group in MANUAL_PREDICTION_GROUPS
+                for field in group["fields"]
+            ],
+        },
+    ]
+    return {
+        "studentId": student_id,
+        "cards": cards,
+        "sections": sections,
+        "notes": [
+            "这是基于你当前填写数据的即时预测，不会改写系统中的历史画像。",
+            "未填写字段会自动回退为当前账号已有值；如果账号本身没有该字段，则模型按缺失处理。",
+        ],
+    }
+
+
+def _normalize_train_feature_value(key, value):
+    if value is None:
+        return None
+    if key == "BMI":
+        number = _safe_float(value, None)
+        if number is None or number <= 0:
+            return None
+    return value
+
+
 def _build_feature_tables(student_id, report, row=None):
     feature = _load_student_feature_record(student_id)
     raw_record = feature.get('_raw_record', {}) if isinstance(feature, dict) else {}
-    prediction = _load_prediction_record(student_id)
-    metrics = report["individual_profile"]["metrics"]
-    comparisons = report["individual_profile"].get("comparisons", {})
-    risk_result = report["risk_result"]
-    row_get = row.get if hasattr(row, "get") else lambda *_: None
-    engagement_prediction = _derive_bucket_prediction(metrics.get("study_index"), ["低投入", "中投入", "高投入"])
-    development_prediction = _derive_bucket_prediction(metrics.get("development_index"), ["低发展", "中发展", "高发展"])
-
-    raw_rows = []
-    seen_labels = set()
-    if raw_record:
-        for key, value in raw_record.items():
-            if key == 'student_id' or value is None:
-                continue
-            label = FEATURE_LABEL_MAP.get(str(key), str(key))
-            seen_labels.add(label)
-            raw_rows.append(
-                _build_feature_row(
-                    label,
-                    f"train_features.{key}",
-                    value,
-                    unit=FEATURE_UNITS.get(label, ''),
-                    source='train_features_final.csv',
-                    used_in_prediction=True,
-                    description=f'来自 train_features_final.csv 的原始或工程特征字段：{label}。',
-                )
-            )
-
-    student_feature_meta = {
-        "internet_duration": ("上网时长", "小时", "student_features / train_features_final.csv", "累计上网时长原始值。"),
-        "avg_monthly_internet_duration": ("月均上网时长", "小时", "student_features / train_features_final.csv", "按月份聚合后的平均上网时长。"),
-        "running_count": ("跑步次数", "次", "student_features / train_features_final.csv", "校园运动记录中的跑步次数。"),
-        "workout_count": ("锻炼次数", "次", "student_features / train_features_final.csv", "运动锻炼行为次数。"),
-        "body_score": ("体测分", "分", "student_features / train_features_final.csv", "体测成绩原始得分。"),
-        "BMI": ("BMI", "", "student_features / train_features_final.csv", "身体质量指数。"),
-        "lung_capacity": ("肺活量", "ml", "student_features / train_features_final.csv", "体测项目中的肺活量。"),
-        "competition_count": ("竞赛次数", "次", "student_features / train_features_final.csv", "学科竞赛参与次数。"),
-        "english_score": ("英语成绩", "分", "student_features / train_features_final.csv", "英语考试原始成绩。"),
-        "overall_score": ("综合成绩", "分", "student_features / train_features_final.csv", "综合测评或综合成绩字段。"),
-        "scholarship_count": ("奖学金次数", "次", "student_features / train_features_final.csv", "学生获得奖学金的次数。"),
-        "scholarship_amount": ("奖学金金额", "元", "student_features / train_features_final.csv", "学生获得奖学金的金额。"),
-    }
-    for key, (label, unit, source, description) in student_feature_meta.items():
-        value = feature.get(key)
-        if value is None or label in seen_labels:
+    basic_rows = []
+    advanced_rows = []
+    for key, value in raw_record.items():
+        if key == 'student_id':
             continue
-        raw_rows.append(_build_feature_row(label, f"student_features.{key}", value, unit=unit, source=source, used_in_prediction=True, description=description))
-
-    analysis_meta = [
-        ("study_time", "学习时长原始值", "", "analysis_master.csv", "主表聚合出的学习时长原始值，当前仍按原始口径展示。"),
-        ("library_count", "图书馆打卡次数", "次", "analysis_master.csv", "主表聚合的图书馆使用次数。"),
-        ("consume_avg", "日均消费", "元", "analysis_master.csv", "主表聚合的日均消费水平。"),
-        ("night_net_ratio", "夜间上网占比", "%", "analysis_master.csv", "主表中的夜间上网比例。"),
-        ("risk_prob", "风险概率", "%", "analysis_master.csv / report", "模型或报告链路中的风险概率。"),
-        ("risk_label", "规则风险标签", "", "analysis_master.csv", "基于规则打标生成的风险标签。"),
-        ("cluster", "聚类编号", "", "analysis_master.csv", "聚类模型输出的类别编号。"),
-        ("study_index", "学习指数原始值", "", "analysis_master.csv", "工程特征中的学习指数原始值。"),
-        ("self_discipline_index", "行为规律原始值", "", "analysis_master.csv", "工程特征中的行为规律原始值。"),
-        ("health_index", "健康发展原始值", "", "analysis_master.csv", "工程特征中的健康指数原始值。"),
-        ("risk_index", "风险指数原始值", "", "analysis_master.csv", "工程特征中的风险指数原始值。"),
-        ("development_index", "综合发展原始值", "", "analysis_master.csv", "工程特征中的综合发展原始值。"),
-        ("performance_level", "学业表现档次", "", "analysis_master.csv", "当前学生所属的学业表现档次。"),
-        ("study_index_display", "学习投入展示分", "分", "analysis_master.csv", "对学习指数按全样本位置换算后的展示分。"),
-        ("self_discipline_index_display", "行为规律展示分", "分", "analysis_master.csv", "对行为规律原始值按全样本位置换算后的展示分。"),
-        ("health_index_display", "健康发展展示分", "分", "analysis_master.csv", "对健康指数按全样本位置换算后的展示分。"),
-        ("risk_index_display", "风险安全展示分", "分", "analysis_master.csv", "对风险指数做反向换算后的展示分。"),
-        ("development_index_display", "综合发展展示分", "分", "analysis_master.csv", "对综合发展指数按全样本位置换算后的展示分。"),
-    ]
-
-    analysis_rows = []
-    for key, label, unit, source, description in analysis_meta:
-        value = row_get(key)
-        if value is None:
-            continue
-        if key in {"night_net_ratio", "risk_prob"}:
-            value = round(_safe_float(value, 0) * 100, 2)
-        analysis_rows.append(_build_feature_row(label, f"analysis_master.{key}", value, unit=unit, source=source, used_in_prediction=True, description=description))
-
-    derived_rows = []
-    for label, key in [("学习投入", "study_index"), ("行为规律", "self_discipline_index"), ("健康发展", "health_index"), ("综合发展", "development_index")]:
-        derived_candidates = [
-            (f"{label}展示分", metrics.get(key), "report_generator.individual_profile.metrics", "当前学生在该维度上的 0-100 展示分。", "分"),
-            (f"{label}群体均值", comparisons.get("cluster_mean", {}).get(key), "profile_generator.comparisons.cluster_mean", "当前画像群体在该维度上的平均水平。", "分"),
-            (f"{label}全样本均值", comparisons.get("overall_mean", {}).get(key), "profile_generator.comparisons.overall_mean", "全样本在该维度上的平均水平。", "分"),
-            (f"{label}百分位", comparisons.get("percentile_rank", {}).get(key), "profile_generator.comparisons.percentile_rank", "当前学生在全样本中的相对位置。", "%"),
-        ]
-        for item_label, item_value, source, description, unit in derived_candidates:
-            if item_value is None:
-                continue
-            derived_rows.append(_build_feature_row(item_label, source.split(".")[-1], item_value, unit=unit, source=source, used_in_prediction=True, description=description))
-
-    output_rows = []
-    prediction_rows = [
-        ("风险概率", prediction.get("risk_probability"), "%", "predictions / online_model", "风险识别模型给出的风险概率。"),
-        ("风险等级", prediction.get("risk_level") or risk_result.get("risk_level"), "", "predictions / report", "当前风险等级判断。"),
-        ("奖学金概率", prediction.get("scholarship_probability"), "%", "predictions / online_model", "奖学金预测模型给出的概率。"),
-        ("高表现概率", prediction.get("high_performance_probability"), "%", "online_model", "学业表现模型中“高表现”类别的概率。"),
-        ("稳定健康概率", prediction.get("stable_health_probability"), "%", "online_model", "健康模型中“中健康/高健康”的合计概率。"),
-        ("上升趋势概率", prediction.get("improving_trend_probability"), "%", "online_model", "变化趋势模型中“上升”类别的概率。"),
-        ("学习投入档次预测", engagement_prediction.get("pred_label"), "", "feature_estimate", "依据学习投入展示分换算出的投入档次。"),
-        ("高投入概率", engagement_prediction.get("prob_map", {}).get("高投入"), "%", "feature_estimate", "基于学习投入展示分估算的高投入概率。"),
-        ("综合发展档次预测", development_prediction.get("pred_label"), "", "feature_estimate", "依据综合发展展示分换算出的发展档次。"),
-        ("高发展概率", development_prediction.get("prob_map", {}).get("高发展"), "%", "feature_estimate", "基于综合发展展示分估算的高发展概率。"),
-        ("英语四级通过概率", prediction.get("cet4_pass_probability"), "%", "feature_estimate", "基于当前英语成绩估算的四级通过概率。"),
-        ("英语六级通过概率", prediction.get("cet6_pass_probability"), "%", "feature_estimate", "基于当前英语成绩估算的六级通过概率。"),
-        ("竞赛活跃概率", prediction.get("competition_probability"), "%", "feature_estimate", "基于竞赛次数、学业潜力和发展指数估算的竞赛活跃概率。"),
-        ("奖学金预测结果", prediction.get("scholarship_prediction"), "", "predictions / online_model", "奖学金分类模型输出结果。"),
-        ("学业表现预测", prediction.get("performance_prediction"), "", "predictions / online_model", "学业表现分类模型输出结果。"),
-        ("健康状态预测", prediction.get("health_prediction"), "", "predictions / online_model", "健康分类模型输出结果。"),
-        ("变化趋势预测", prediction.get("change_trend_prediction"), "", "predictions / online_model", "变化趋势分类模型输出结果。"),
-        ("综合预测分", prediction.get("score_prediction"), "分", "predictions / online_model", "综合回归模型输出的预测分数。"),
-        ("画像类型", risk_result.get("cluster_label"), "", "report_generator", "个体画像识别结果。"),
-        ("规则风险标签", row_get("risk_label"), "", "analysis_master.csv", "原始规则标签，和模型风险概率并列展示。"),
-    ]
-    for label, value, unit, source, description in prediction_rows:
-        if value is None:
-            continue
-        if label.endswith("概率"):
-            value = _probability_percent(value)
-        output_rows.append(_build_feature_row(label, label, value, unit=unit, source=source, used_in_prediction=False, description=description))
+        normalized_value = _normalize_train_feature_value(key, value)
+        label = FEATURE_LABEL_MAP.get(str(key), str(key))
+        row_description = f'来自 train_features_final.csv 的字段：{label}。'
+        if normalized_value is None:
+            row_description += ' 原始对应表当前缺少可用记录，系统按缺失处理，不再误显示为 0。'
+        row_payload = _build_feature_row(
+            label,
+            f"train_features.{key}",
+            normalized_value,
+            unit=FEATURE_UNITS.get(label, ''),
+            source='train_features_final.csv',
+            used_in_prediction=True,
+            description=row_description,
+        )
+        if key in BASIC_FEATURE_KEYS or label in BASIC_FEATURE_LABELS:
+            basic_rows.append(row_payload)
+        else:
+            advanced_rows.append(row_payload)
 
     feature_tables = []
-    for title, description, rows in [
-        ("原始行为与成绩特征", "来自 train_features_final.csv 与 student_features 的全量原始或工程特征。", raw_rows),
-        ("分析主表特征", "来自 analysis_master.csv 的聚合指标与展示字段。", analysis_rows),
-        ("进阶对比特征", "当前学生与群体、全样本之间的对比结果。", derived_rows),
-        ("模型输出与画像结果", "来自 predictions 表或在线模型推断的输出结果。", output_rows),
-    ]:
-        if rows:
-            feature_tables.append({"title": title, "description": description, "rows": rows})
+    if basic_rows:
+        feature_tables.append({
+            "title": "基本特征",
+            "description": "直接来自 train_features_final.csv 的基础行为、成绩与体测聚合特征。",
+            "rows": basic_rows,
+        })
+    if advanced_rows:
+        feature_tables.append({
+            "title": "进阶特征",
+            "description": "基于基础行为和成绩进一步构造的指数、比例、平衡性与稳定性特征。",
+            "rows": advanced_rows,
+        })
 
     feature_formulas = [
-        _build_feature_formula_item("学习投入展示分", "基于学习指数原始值在全样本中的分位数换算到 0-100。", "展示分只用于界面理解，不直接替代工程原始指标。", "analysis_master"),
-        _build_feature_formula_item("行为规律展示分", "基于行为规律原始值在全样本中的分位数换算到 0-100。", "用于表示当前学生在行为规律维度上的相对位置。", "analysis_master"),
-        _build_feature_formula_item("健康发展展示分", "基于健康指数原始值在全样本中的分位数换算到 0-100。", "用于观察当前身心状态在样本中的相对位置。", "analysis_master"),
-        _build_feature_formula_item("风险安全展示分", "基于风险指数原始值的分位位置，再做反向换算得到 0-100。", "数值越高表示风险越低、状态越稳。", "analysis_master"),
-        _build_feature_formula_item("综合发展展示分", "基于综合发展原始值在全样本中的分位数换算到 0-100。", "用于衡量当前成长动能在样本中的位置。", "analysis_master"),
-        _build_feature_formula_item("夜间上网占比", "夜间上网时长 / 总上网时长", "用于观察夜间行为与节律波动。", "train_features / analysis_master"),
-        _build_feature_formula_item("风险概率", "模型输出的正类概率，范围 0 到 1。", "页面展示时会统一换算成百分比。", "online_model / predictions"),
-        _build_feature_formula_item("奖学金概率", "奖学金分类模型输出的概率值。", "用于辅助判断奖学金获得可能性。", "online_model / predictions"),
-        _build_feature_formula_item("学习投入档次预测", "基于学习投入展示分映射到低/中/高三档，并按距离生成概率。", "用于补齐学习投入分类任务的输出。", "feature_estimate"),
-        _build_feature_formula_item("综合发展档次预测", "基于综合发展展示分映射到低/中/高三档，并按距离生成概率。", "用于补齐综合发展分类任务的输出。", "feature_estimate"),
-        _build_feature_formula_item("英语四级通过概率", "sigmoid((英语成绩 - 425) / 22)", "基于当前英语成绩做的经验估算，不是独立监督模型。", "feature_estimate"),
-        _build_feature_formula_item("英语六级通过概率", "sigmoid((英语成绩 - 500) / 22)", "基于当前英语成绩做的经验估算，不是独立监督模型。", "feature_estimate"),
-        _build_feature_formula_item("竞赛活跃概率", "0.12 + min(竞赛次数, 3) × 0.18 + 学业潜力加成 + 发展指数加成", "用于估计学生在竞赛方向的持续活跃可能性。", "feature_estimate"),
-        _build_feature_formula_item("规则风险标签", "综合成绩、上网时长、夜间次数、图书馆次数等规则打标", "该标签来自规则，不等同于模型风险概率。", "model_train / analysis_master"),
-        _build_feature_formula_item("画像类型", "聚类结果 + 画像命名规则", "用于表示学生更接近哪一类行为与发展模式。", "cluster model / report_generator"),
+        _build_feature_formula_item("学习指数", "由学习行为、作业、测验与考试表现组合形成。", "用于衡量学习投入与结果的综合水平。", "train_features_final.csv"),
+        _build_feature_formula_item("自律指数", "由作息规律、学习节奏和行为稳定性组合形成。", "用于描述学生的规律性与自我管理情况。", "train_features_final.csv"),
+        _build_feature_formula_item("健康指数", "由运动、体测与行为节律相关特征组合形成。", "用于描述身体状态与健康发展情况。", "train_features_final.csv"),
+        _build_feature_formula_item("综合发展指数", "由学业、健康、社交与发展相关特征组合形成。", "用于概括学生的整体发展水平。", "train_features_final.csv"),
+        _build_feature_formula_item("夜间占比", "夜间行为次数 / 总体相关行为次数", "用于观察夜间活跃程度与节律波动。", "train_features_final.csv"),
+        _build_feature_formula_item("学习娱乐平衡指数", "学习投入与非学习活动之间的平衡关系特征", "用于识别投入失衡或作息失衡情况。", "train_features_final.csv"),
+        _build_feature_formula_item("投入产出平衡指数", "学习投入相关特征与成绩结果特征的综合比值", "用于观察高投入低产出或低投入高产出情况。", "train_features_final.csv"),
+        _build_feature_formula_item("成绩变化代理指数", "基于成绩均值、波动和近期表现构造", "用于近似表征成绩走向。", "train_features_final.csv"),
     ]
 
     return {"featureTables": feature_tables, "featureFormulas": feature_formulas}
@@ -1924,6 +2169,8 @@ def _build_student_detail_snapshot(student_id, row=None, metrics=None, risk_resu
     scholarship_count = _safe_number(feature.get("scholarship_count"), digits=0)
     scholarship_amount = _safe_number(feature.get("scholarship_amount"))
     bmi = _safe_number(feature.get("BMI"), digits=2)
+    if bmi is not None and bmi <= 0:
+        bmi = None
     body_score = _safe_number(feature.get("body_score"))
     lung_capacity = _safe_number(feature.get("lung_capacity"), digits=0)
     quiz_average = _safe_number(feature.get("quiz_average"))
@@ -1940,10 +2187,32 @@ def _build_student_detail_snapshot(student_id, row=None, metrics=None, risk_resu
     stable_health_probability = _safe_number(_probability_percent(prediction.get("stable_health_probability")), digits=1)
     improving_trend_probability = _safe_number(_probability_percent(prediction.get("improving_trend_probability")), digits=1)
     high_performance_probability = _safe_number(_probability_percent(prediction.get("high_performance_probability")), digits=1)
-    engagement_prediction = _derive_bucket_prediction((metrics or {}).get("study_index"), ["低投入", "中投入", "高投入"])
-    development_prediction = _derive_bucket_prediction((metrics or {}).get("development_index"), ["低发展", "中发展", "高发展"])
-    high_engagement_probability = _safe_number(_probability_percent(engagement_prediction.get("prob_map", {}).get("高投入")), digits=1)
-    high_development_probability = _safe_number(_probability_percent(development_prediction.get("prob_map", {}).get("高发展")), digits=1)
+    engagement_prediction = {
+        "pred_label": prediction.get("learning_engagement_prediction"),
+        "prob_map": prediction.get("learning_engagement_probabilities") or {},
+    }
+    if not engagement_prediction["pred_label"]:
+        engagement_prediction = _derive_bucket_prediction((metrics or {}).get("study_index"), ["低投入", "中投入", "高投入"])
+
+    development_prediction = {
+        "pred_label": prediction.get("development_prediction"),
+        "prob_map": prediction.get("development_probabilities") or {},
+    }
+    if not development_prediction["pred_label"]:
+        development_prediction = _derive_bucket_prediction((metrics or {}).get("development_index"), ["低发展", "中发展", "高发展"])
+
+    high_engagement_probability = _safe_number(
+        _probability_percent(
+            prediction.get("high_engagement_probability", engagement_prediction.get("prob_map", {}).get("高投入"))
+        ),
+        digits=1,
+    )
+    high_development_probability = _safe_number(
+        _probability_percent(
+            prediction.get("high_development_probability", development_prediction.get("prob_map", {}).get("高发展"))
+        ),
+        digits=1,
+    )
 
     performance_level = str(row_get("performance_level") or "").strip()
     risk_probability = _safe_number((_safe_float(risk_result.get("risk_prob"), 0) if risk_result else _safe_float(row_get("risk_prob"), 0)) * 100, digits=1)
@@ -1955,27 +2224,26 @@ def _build_student_detail_snapshot(student_id, row=None, metrics=None, risk_resu
     _append_snapshot_item(academic_details, "英语考试次数", english_exam_count, "次", "来自 student_features")
     _append_snapshot_item(academic_details, "测验平均分", quiz_average, "分", "来自 student_features")
     _append_snapshot_item(academic_details, "作业平均分", assignment_average, "分", "来自 student_features")
-    _append_snapshot_item(academic_details, "BMI", bmi, "", "来自体测原始数据")
+    _append_snapshot_item(academic_details, "BMI", bmi, "", "来自体测原始数据；原始缺失值不会再显示为 0")
     _append_snapshot_item(academic_details, "体测分", body_score, "分", "来自体测原始数据")
     _append_snapshot_item(academic_details, "肺活量", lung_capacity, "ml", "来自体测原始数据")
     _append_snapshot_item(academic_details, "竞赛次数", competition_count, "次", "来自 student_features")
     _append_snapshot_item(academic_details, "奖学金次数", scholarship_count, "次", "来自 student_features")
     _append_snapshot_item(academic_details, "奖学金金额", scholarship_amount, "元", "来自 student_features")
-    _append_snapshot_item(academic_details, "综合预测分", score_prediction, "分", "来自 predictions")
-    _append_snapshot_item(academic_details, "奖学金概率", scholarship_probability, "%", "来自 predictions")
-    _append_snapshot_item(academic_details, "英语四级通过概率", cet4_probability, "%", "基于英语成绩估算")
-    _append_snapshot_item(academic_details, "英语六级通过概率", cet6_probability, "%", "基于英语成绩估算")
-    _append_snapshot_item(academic_details, "竞赛活跃概率", competition_probability, "%", "基于竞赛次数、学业潜力和发展指数估算")
-    _append_snapshot_item(academic_details, "高表现概率", high_performance_probability, "%", "来自学业表现模型")
-    _append_snapshot_item(academic_details, "稳定健康概率", stable_health_probability, "%", "来自健康模型")
-    _append_snapshot_item(academic_details, "上升趋势概率", improving_trend_probability, "%", "来自变化趋势模型")
-    _append_snapshot_item(academic_details, "学习投入档次预测", engagement_prediction.get("pred_label"), "", "依据学习投入展示分换算")
-    _append_snapshot_item(academic_details, "高投入概率", high_engagement_probability, "%", "基于学习投入展示分估算")
-    _append_snapshot_item(academic_details, "综合发展档次预测", development_prediction.get("pred_label"), "", "依据综合发展展示分换算")
-    _append_snapshot_item(academic_details, "高发展概率", high_development_probability, "%", "基于综合发展展示分估算")
-    _append_snapshot_item(academic_details, "风险概率", risk_probability, "%", "来自 report")
-    if performance_level:
-        _append_snapshot_item(academic_details, "学业表现档次", performance_level, "", "来自 analysis_master.csv")
+    _append_snapshot_item(academic_details, "综合预测分", score_prediction, "分", "来自 predictions", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "奖学金概率", scholarship_probability, "%", "来自 predictions", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "英语四级通过概率", cet4_probability, "%", "来自英语四级预测模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "英语六级通过概率", cet6_probability, "%", "来自英语六级预测模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "竞赛活跃概率", competition_probability, "%", "基于竞赛次数、学业潜力和发展指数估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "高表现概率", high_performance_probability, "%", "来自学业表现模型", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "稳定健康概率", stable_health_probability, "%", "来自健康模型", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "上升趋势概率", improving_trend_probability, "%", "来自变化趋势模型", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "学习投入档次预测", engagement_prediction.get("pred_label"), "", "来自学习投入分类模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "高投入概率", high_engagement_probability, "%", "来自学习投入分类模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "综合发展档次预测", development_prediction.get("pred_label"), "", "来自综合发展分类模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "高发展概率", high_development_probability, "%", "来自综合发展分类模型；缺失时回退为估算", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "风险概率", risk_probability, "%", "来自 report", missing_text=MODEL_MISSING_TEXT)
+    _append_snapshot_item(academic_details, "学业表现档次", performance_level, "", "来自 analysis_master.csv", missing_text=MODEL_MISSING_TEXT)
 
     return {
         "behaviorDetails": behavior_details,
@@ -2543,6 +2811,22 @@ def get_student_group_compare_v2():
     return jsonify({'code': 200, 'message': 'success', 'data': _build_student_compare_payload(student_id)})
 
 
+def get_student_predict_schema_v2():
+    student_id = _resolve_student_id()
+    if not student_id:
+        return jsonify({'code': 404, 'message': '学生账号不存在', 'data': None}), 404
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_manual_prediction_schema(student_id)})
+
+
+def submit_student_manual_predict_v2():
+    student_id = _resolve_student_id()
+    if not student_id:
+        return jsonify({'code': 404, 'message': '学生账号不存在', 'data': None}), 404
+    payload = request.json or {}
+    values = payload.get('values') if isinstance(payload.get('values'), dict) else {}
+    return jsonify({'code': 200, 'message': 'success', 'data': _build_manual_prediction_payload(student_id, values)})
+
+
 def get_admin_student_detail_v2(student_id):
     if not analysis_available:
         return jsonify({'code': 404, 'message': '分析数据不可用', 'data': None}), 404
@@ -2739,6 +3023,14 @@ def get_student_group_compare():
     return get_student_group_compare_v2()
 
 
+def get_student_predict_schema():
+    return get_student_predict_schema_v2()
+
+
+def submit_student_manual_predict():
+    return submit_student_manual_predict_v2()
+
+
 def get_admin_student_detail(student_id):
     return get_admin_student_detail_v2(student_id)
 
@@ -2807,6 +3099,8 @@ app.register_blueprint(
         get_student_report=require_roles('student', 'admin')(get_student_report),
         get_student_recommendations=require_roles('student', 'admin')(get_student_recommendations),
         get_student_group_compare=require_roles('student', 'admin')(get_student_group_compare),
+        get_student_predict_schema=require_roles('student', 'admin')(get_student_predict_schema),
+        submit_student_manual_predict=require_roles('student', 'admin')(submit_student_manual_predict),
     )
 )
 app.register_blueprint(

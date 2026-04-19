@@ -1,10 +1,9 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { getStudentDetail, getWarnings } from '../../api/admin';
 import type { StudentDetail, StudentMetrics } from '../../types';
+import { getProfileSubtypeExplanation } from '../../utils/profileSubtype';
 
-const router = useRouter();
 const source = ref<StudentMetrics[]>([]);
 const filterDrawerVisible = ref(false);
 const drawerVisible = ref(false);
@@ -52,8 +51,20 @@ async function openDetail(studentId: string) {
   drawerVisible.value = true;
 }
 
+function goToStudentDetail(studentId: string) {
+  window.location.hash = `#/students/${encodeURIComponent(studentId)}`;
+}
+
+function goToStudentReport(studentId: string) {
+  window.location.hash = `#/students/${encodeURIComponent(studentId)}/report`;
+}
+
 function handleRowClick(row: StudentMetrics) {
   openDetail(row.studentId);
+}
+
+function subtypeExplanation(subtype?: string) {
+  return getProfileSubtypeExplanation(subtype);
 }
 </script>
 
@@ -95,7 +106,14 @@ function handleRowClick(row: StudentMetrics) {
           <el-table-column prop="major" label="专业" min-width="160" />
           <el-table-column prop="riskLevel" label="风险等级" width="100" />
           <el-table-column prop="profileCategory" label="画像类别" min-width="140" />
-          <el-table-column prop="profileSubtype" label="细分画像" min-width="170" />
+          <el-table-column label="细分画像" min-width="220">
+            <template #default="{ row }">
+              <div class="subtype-cell">
+                <div>{{ row.profileSubtype || '未细分' }}</div>
+                <div v-if="subtypeExplanation(row.profileSubtype)" class="subtype-note">{{ subtypeExplanation(row.profileSubtype) }}</div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="二级标签" min-width="220">
             <template #default="{ row }">
               <div v-if="row.secondaryTags?.length" class="tag-list compact">
@@ -108,8 +126,8 @@ function handleRowClick(row: StudentMetrics) {
           <el-table-column label="操作" width="220">
             <template #default="{ row }">
               <el-space>
-                <el-button type="primary" link size="small" @click="openDetail(row.studentId)">单学生详情</el-button>
-                <el-button type="primary" link size="small" @click="router.push(`/students/${row.studentId}/report`)">完整报告</el-button>
+                <el-button type="primary" link size="small" @click.stop.prevent="goToStudentDetail(row.studentId)">单学生详情</el-button>
+                <el-button type="primary" link size="small" @click.stop.prevent="goToStudentReport(row.studentId)">完整报告</el-button>
               </el-space>
             </template>
           </el-table-column>
@@ -157,6 +175,9 @@ function handleRowClick(row: StudentMetrics) {
           <span class="drawer-tag">{{ currentDetail.profileCategory }}</span>
           <span v-if="currentDetail.profileSubtype" class="drawer-tag">{{ currentDetail.profileSubtype }}</span>
         </div>
+        <div v-if="subtypeExplanation(currentDetail.profileSubtype)" class="drawer-subtype-note">
+          {{ subtypeExplanation(currentDetail.profileSubtype) }}
+        </div>
         <div v-if="currentDetail.secondaryTags?.length" class="tag-list">
           <span v-for="item in currentDetail.secondaryTags" :key="item" class="tag-chip">{{ item }}</span>
         </div>
@@ -169,8 +190,8 @@ function handleRowClick(row: StudentMetrics) {
           <el-descriptions-item label="综合结论">{{ currentDetail.reportSummary }}</el-descriptions-item>
         </el-descriptions>
         <div class="drawer-actions">
-          <el-button type="primary" style="width:100%" @click="router.push(`/students/${currentDetail.studentId}`); drawerVisible = false">单学生详情</el-button>
-          <el-button style="width:100%" @click="router.push(`/students/${currentDetail.studentId}/report`); drawerVisible = false">完整报告</el-button>
+          <el-button type="primary" style="width:100%" @click="goToStudentDetail(currentDetail.studentId); drawerVisible = false">单学生详情</el-button>
+          <el-button style="width:100%" @click="goToStudentReport(currentDetail.studentId); drawerVisible = false">完整报告</el-button>
         </div>
       </div>
     </el-drawer>
@@ -242,6 +263,19 @@ function handleRowClick(row: StudentMetrics) {
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 700;
+}
+
+.subtype-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subtype-note,
+.drawer-subtype-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
 }
 
 .drawer-content {

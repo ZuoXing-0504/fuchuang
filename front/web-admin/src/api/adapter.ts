@@ -6,7 +6,9 @@
   DashboardOverview,
   FeatureImportance,
   ModelMetric,
+  ModelMetricValue,
   ModelSummary,
+  ModelTaskSummary,
   StudentDetail,
   StudentMetrics
 } from '../types';
@@ -104,7 +106,9 @@ export function adaptModelSummary(payload: unknown): ModelSummary {
   return {
     metrics: adaptModelMetrics(raw.metrics ?? raw.metricList ?? raw.models ?? []),
     importance: adaptFeatureImportance(raw.importance ?? raw.featureImportance ?? raw.features ?? []),
-    description: normalizeStringArray(raw.description ?? raw.descriptions ?? raw.notes)
+    description: normalizeStringArray(raw.description ?? raw.descriptions ?? raw.notes),
+    overviewCards: normalizeOverviewCards(raw.overviewCards ?? raw.kpis ?? raw.cards),
+    tasks: normalizeModelTasks(raw.tasks)
   };
 }
 
@@ -233,6 +237,68 @@ function adaptFeatureImportance(payload: unknown): FeatureImportance[] {
   });
 }
 
+function normalizeOverviewCards(payload: unknown): NonNullable<ModelSummary['overviewCards']> {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      label: getString(row, ['label'], '指标'),
+      value: getString(row, ['value'], ''),
+      tone: getString(row, ['tone'], 'primary'),
+      note: getString(row, ['note', 'description'], '')
+    };
+  });
+}
+
+function normalizeModelTasks(payload: unknown): NonNullable<ModelSummary['tasks']> {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      taskKey: getString(row, ['taskKey'], 'unknown'),
+      taskName: getString(row, ['taskName'], '任务模型'),
+      taskType: getString(row, ['taskType'], 'binary'),
+      description: getString(row, ['description'], ''),
+      bestModel: getString(row, ['bestModel'], '未提供'),
+      primaryMetricKey: getString(row, ['primaryMetricKey'], 'score'),
+      primaryMetricLabel: getString(row, ['primaryMetricLabel'], '主指标'),
+      primaryMetricValue: getOptionalNumber(row, ['primaryMetricValue']),
+      secondaryMetricKey: getString(row, ['secondaryMetricKey'], 'secondary'),
+      secondaryMetricLabel: getString(row, ['secondaryMetricLabel'], '辅助指标'),
+      secondaryMetricValue: getOptionalNumber(row, ['secondaryMetricValue']),
+      rows: normalizeModelTaskRows(row.rows),
+      importance: adaptFeatureImportance(row.importance),
+      status: getString(row, ['status'], 'offline_evaluation'),
+      statusLabel: getString(row, ['statusLabel'], ''),
+      onlineAvailable: Boolean(row.onlineAvailable),
+      source: getString(row, ['source'], '')
+    };
+  });
+}
+
+function normalizeModelTaskRows(payload: unknown): ModelTaskSummary['rows'] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      model: getString(row, ['model'], 'unknown'),
+      values: normalizeModelMetricValues(row.values)
+    };
+  });
+}
+
+function normalizeModelMetricValues(payload: unknown): ModelMetricValue[] {
+  const rows = unwrapPayload<unknown[]>(payload) ?? [];
+  return rows.map((item) => {
+    const row = item as UnknownRecord;
+    return {
+      key: getString(row, ['key'], 'metric'),
+      label: getString(row, ['label'], '指标'),
+      value: getNumber(row, ['value'], 0)
+    };
+  });
+}
+
 function normalizeChartArray(payload: unknown): Array<{ name: string; value: number }> {
   const rows = unwrapPayload<unknown[]>(payload) ?? [];
   return rows.map((item) => {
@@ -284,10 +350,10 @@ function normalizeDetailSnapshotItems(payload: unknown): NonNullable<StudentDeta
     const row = item as UnknownRecord;
     return {
       label: getString(row, ['label', 'name'], '明细'),
-      value: getString(row, ['value'], ''),
+      value: getString(row, ['value'], '暂无原始记录'),
       note: getString(row, ['note', 'description'], '')
     };
-  }).filter((item) => item.value);
+  });
 }
 
 function normalizeDimensionBasis(payload: unknown): NonNullable<StudentDetail['dimensionBasis']> {
@@ -349,7 +415,7 @@ function normalizeFeatureTableRows(payload: unknown) {
     return {
       label: getString(row, ['label'], '特征'),
       key: getString(row, ['key'], ''),
-      value: getString(row, ['value'], '未提供'),
+      value: getString(row, ['value'], '暂无原始记录'),
       unit: getString(row, ['unit'], ''),
       source: getString(row, ['source'], ''),
       usedInPrediction: Boolean(row.usedInPrediction),
@@ -427,4 +493,17 @@ function getNumber(row: UnknownRecord, keys: string[], fallback = 0) {
     }
   }
   return fallback;
+}
+
+function getOptionalNumber(row: UnknownRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = row[key];
+    if (value !== undefined && value !== null && `${value}` !== '') {
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
 }

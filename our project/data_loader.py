@@ -147,10 +147,14 @@ def drop_all_empty_columns(df: pd.DataFrame, table_name: str):
     return df[keep_cols].copy()
 
 
-def drop_all_zero_numeric_columns(df: pd.DataFrame):
+def drop_all_zero_numeric_columns(df: pd.DataFrame, keep_cols=None):
+    if keep_cols is None:
+        keep_cols = set()
+    else:
+        keep_cols = set(keep_cols)
     drop_cols = []
     for col in df.columns:
-        if col == "student_id":
+        if col == "student_id" or col in keep_cols:
             continue
         if pd.api.types.is_numeric_dtype(df[col]):
             if (df[col].fillna(0) == 0).all():
@@ -860,13 +864,29 @@ feature_df["成绩变化代理指数"] = (
 # =========================
 # 缺失值填充
 # =========================
+basic_numeric_cols = [
+    "上网时长", "月均上网时长",
+    "跑步次数", "跑步活跃天数", "跑步学期数", "最近30天跑步次数", "最近60天跑步次数", "最近90天跑步次数",
+    "锻炼次数", "锻炼均次", "锻炼周数", "锻炼学期数",
+    "体测分", "BMI", "肺活量", "50米", "立定跳远", "坐位体前屈", "800米", "1000米", "仰卧起坐", "引体向上",
+    "视频学习时长", "视频学习时长均值",
+    "测验平均分", "作业平均分", "作业平均分_课堂任务", "考试平均分",
+    "作业提交次数", "作业完成次数",
+    "图书馆次数", "进馆次数", "出馆次数", "图书馆活跃天数", "晚间到馆次数", "周末到馆次数", "白天到馆次数",
+    "门禁次数", "进门次数", "出门次数", "夜间次数", "周末门禁次数", "白天门禁次数", "门禁活跃天数",
+    "讨论数", "回帖数", "线上访问量", "线上访问量均值", "直播学习时长", "拓展学习时长", "试卷参与次数", "问答参与次数", "互评分次数",
+    "社团次数", "社团活跃天数", "竞赛次数",
+    "英语成绩", "英语平均分", "英语考试次数",
+    "综合成绩", "奖学金次数", "奖学金金额",
+]
 num_cols = feature_df.select_dtypes(include=["number"]).columns
-feature_df[num_cols] = feature_df[num_cols].fillna(0)
+fill_zero_cols = [col for col in num_cols if col not in basic_numeric_cols]
+feature_df[fill_zero_cols] = feature_df[fill_zero_cols].fillna(0)
 
 # =========================
 # 删除全0数值列
 # =========================
-feature_df = drop_all_zero_numeric_columns(feature_df)
+feature_df = drop_all_zero_numeric_columns(feature_df, keep_cols=basic_numeric_cols)
 
 # =========================
 # 方案 B：手动删除当前时间范围下明显失效/极稀疏的列
@@ -897,7 +917,7 @@ sparse_keep_cols = [
 feature_df = drop_sparse_numeric_columns(
     feature_df,
     zero_threshold=0.98,
-    keep_cols=sparse_keep_cols
+    keep_cols=sparse_keep_cols + basic_numeric_cols
 )
 
 # =========================

@@ -10,14 +10,27 @@ const auth = useStudentAuthStore();
 const preferences = useStudentLayoutPreferences();
 const collapsed = ref(false);
 
+type NavIconKey = 'home' | 'profile' | 'predict' | 'compare' | 'report' | 'analysis' | 'settings';
+
 const navItems = [
-  { path: '/home', label: '首页', icon: '首' },
-  { path: '/profile', label: '我的画像', icon: '像' },
-  { path: '/compare', label: '群体对比', icon: '比' },
-  { path: '/report', label: '个性化报告', icon: '报' },
-  { path: '/analysis', label: '全样本分析', icon: '析' },
-  { path: '/settings', label: '设置中心', icon: '设' }
+  { path: '/home', label: '首页', icon: 'home' as NavIconKey },
+  { path: '/profile', label: '我的画像', icon: 'profile' as NavIconKey },
+  { path: '/predict', label: '在线预测', icon: 'predict' as NavIconKey },
+  { path: '/compare', label: '群体对比', icon: 'compare' as NavIconKey },
+  { path: '/report', label: '个性化报告', icon: 'report' as NavIconKey },
+  { path: '/analysis', label: '全样本分析', icon: 'analysis' as NavIconKey },
+  { path: '/settings', label: '设置中心', icon: 'settings' as NavIconKey }
 ];
+
+const navIconPaths: Record<NavIconKey, string[]> = {
+  home: ['M4 10.5 12 4l8 6.5', 'M6.5 9.5V20h11V9.5', 'M10 20v-5h4v5'],
+  profile: ['M12 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z', 'M5.5 19a6.5 6.5 0 0 1 13 0'],
+  predict: ['M5 17l4-4 3 3 7-7', 'M16 9h3v3'],
+  compare: ['M6 6h5v12H6z', 'M13 9h5v9h-5z'],
+  report: ['M8 4.5h6l3 3V19H8z', 'M14 4.5V8h3', 'M10 12h5', 'M10 15h5'],
+  analysis: ['M6 18V11', 'M11 18V7', 'M16 18v-4'],
+  settings: ['M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z', 'M12 3v2.2', 'M12 18.8V21', 'M4.9 4.9l1.6 1.6', 'M17.5 17.5l1.6 1.6', 'M3 12h2.2', 'M18.8 12H21', 'M4.9 19.1l1.6-1.6', 'M17.5 6.5l1.6-1.6']
+};
 
 const activeNav = computed(() => {
   const match = navItems.find((item) => route.path.startsWith(item.path));
@@ -43,7 +56,14 @@ function handleLogout() {
     <aside class="sidebar">
       <div class="sidebar-top">
         <div class="brand-wrap">
-          <div class="brand-icon">SB</div>
+          <div class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect x="7" y="8" width="34" height="32" rx="12" />
+              <path d="M16 31V18h16v13" />
+              <path d="M20 25c1.4-2.8 3.1-4.2 4-4.2s2.6 1.4 4 4.2" />
+              <path d="M20 31h8" />
+            </svg>
+          </div>
           <transition name="fade">
             <div v-if="!collapsed" class="brand-copy">
               <div class="brand-title">学生成长档案</div>
@@ -62,7 +82,11 @@ function handleLogout() {
           class="nav-item"
           :class="{ active: route.path.startsWith(item.path) }"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path v-for="segment in navIconPaths[item.icon]" :key="segment" :d="segment" />
+            </svg>
+          </span>
           <transition name="fade">
             <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
           </transition>
@@ -166,8 +190,16 @@ function handleLogout() {
   border-radius: 14px;
   background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #fff;
-  font-size: 13px;
-  font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.brand-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .brand-title {
@@ -228,13 +260,20 @@ function handleLogout() {
   border-radius: 12px;
   background: rgba(22, 119, 255, 0.1);
   color: #1677ff;
-  font-size: 13px;
-  font-weight: 900;
 }
 
 .nav-item.active .nav-icon {
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
+}
+
+.nav-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .account-card {

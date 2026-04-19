@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getWarnings } from '../../api/admin';
 import type { StudentMetrics } from '../../types';
+import { getProfileSubtypeExplanation } from '../../utils/profileSubtype';
 
 type DimensionKey = 'college' | 'major';
 
@@ -131,6 +132,10 @@ function openAggregate(row: AggregateRow) {
   currentAggregate.value = row;
   detailDrawerVisible.value = true;
 }
+
+function subtypeExplanation(subtype?: string) {
+  return getProfileSubtypeExplanation(subtype);
+}
 </script>
 
 <template>
@@ -149,6 +154,7 @@ function openAggregate(row: AggregateRow) {
         <div class="hero-eyebrow">Organization Comparison</div>
         <h1 class="hero-title">学院 / 专业对比</h1>
         <p class="hero-subtitle">按学院和专业查看风险比例、注册覆盖率、主导画像和主导细分，并可继续进入具体学生名单。</p>
+        <p class="hero-note">提示：高风险率反映该分组里高风险学生占比，主导画像反映人数最多的画像类别，两者不是同一个口径，因此可能同时出现“高风险率较高”与“主导画像偏稳健”的情况。</p>
       </div>
       <div class="hero-side">
         <div class="hero-chip">真实名单聚合</div>
@@ -183,7 +189,7 @@ function openAggregate(row: AggregateRow) {
 
       <div v-if="loading" class="empty-tip">正在加载真实名单...</div>
 
-      <el-table v-else :data="activeRows" stripe @row-click="openAggregate">
+        <el-table v-else :data="activeRows" stripe @row-click="openAggregate">
         <el-table-column prop="label" :label="activeDimension === 'college' ? '学院' : '专业'" min-width="220" />
         <el-table-column prop="studentCount" label="人数" width="90" />
         <el-table-column prop="highRiskCount" label="高风险" width="90" />
@@ -199,7 +205,14 @@ function openAggregate(row: AggregateRow) {
         </el-table-column>
         <el-table-column prop="avgScore" label="综合发展均值" width="130" />
         <el-table-column prop="dominantProfile" label="主导画像" min-width="160" />
-        <el-table-column prop="dominantSubtype" label="主导细分" min-width="190" />
+        <el-table-column label="主导细分" min-width="230">
+          <template #default="{ row }">
+            <div class="subtype-cell">
+              <div>{{ row.dominantSubtype }}</div>
+              <div v-if="subtypeExplanation(row.dominantSubtype)" class="subtype-note">{{ subtypeExplanation(row.dominantSubtype) }}</div>
+            </div>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -236,6 +249,9 @@ function openAggregate(row: AggregateRow) {
         <el-descriptions :column="1" border>
           <el-descriptions-item label="主导画像">{{ currentAggregate.dominantProfile }}</el-descriptions-item>
           <el-descriptions-item label="主导细分">{{ currentAggregate.dominantSubtype }}</el-descriptions-item>
+          <el-descriptions-item v-if="subtypeExplanation(currentAggregate.dominantSubtype)" label="细分说明">
+            {{ subtypeExplanation(currentAggregate.dominantSubtype) }}
+          </el-descriptions-item>
           <el-descriptions-item label="高风险率">{{ currentAggregate.riskRate }}%</el-descriptions-item>
           <el-descriptions-item label="综合发展均值">{{ currentAggregate.avgScore }}</el-descriptions-item>
         </el-descriptions>
@@ -247,6 +263,7 @@ function openAggregate(row: AggregateRow) {
                 <div>
                   <div class="student-name">{{ item.name || item.studentId }}</div>
                   <div class="student-meta">{{ item.studentId }} · {{ item.profileCategory }} · {{ item.profileSubtype || '未细分' }}</div>
+                  <div v-if="subtypeExplanation(item.profileSubtype)" class="student-subtype-note">{{ subtypeExplanation(item.profileSubtype) }}</div>
                 </div>
                 <el-button type="primary" link @click="router.push(`/students/${item.studentId}`)">单学生详情</el-button>
               </div>
@@ -314,6 +331,14 @@ function openAggregate(row: AggregateRow) {
   font-size: 14px;
   line-height: 1.9;
   color: rgba(248, 250, 252, 0.82);
+}
+
+.hero-note {
+  margin: 10px 0 0;
+  max-width: 760px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: rgba(226, 232, 240, 0.82);
 }
 
 .hero-side {
@@ -401,6 +426,18 @@ function openAggregate(row: AggregateRow) {
   font-weight: 700;
 }
 
+.subtype-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subtype-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
 .empty-tip {
   padding: 16px;
   border-radius: 14px;
@@ -441,6 +478,13 @@ function openAggregate(row: AggregateRow) {
 .drawer-meta {
   margin-top: 4px;
   font-size: 12px;
+  color: #64748b;
+}
+
+.student-subtype-note {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.6;
   color: #64748b;
 }
 
