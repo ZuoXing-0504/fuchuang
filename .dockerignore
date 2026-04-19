@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+.idea
+.codex_tmp
+front/**/node_modules
+front/**/dist
+front/**/.npm-cache
+student_behavior.db
+student_behavior.runtime.db
+student_behavior.runtime.db-journal
+our project/temp_artifacts

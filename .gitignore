@@ -19,6 +19,7 @@ our project/.venv/
 node_modules/
 dist/
 .npm-cache/
+coverage/
 
 # Runtime data
 *.log
@@ -30,6 +31,11 @@ dist/
 # Temporary / local tooling
 .codex_tmp/
 tmp_*
+our project/temp_artifacts/
+.env
+.env.local
+front/web-admin/.env.local
+front/web-student/.env.local
 
 # OS files
 .DS_Store

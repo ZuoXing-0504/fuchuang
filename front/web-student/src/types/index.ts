@@ -18,6 +18,7 @@ export interface StudentUser {
   name: string;
   role: 'student';
   token: string;
+  tokenExpiresAt?: string;
 }
 
 export interface ChartStatus {

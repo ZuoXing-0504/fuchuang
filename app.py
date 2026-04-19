@@ -29,6 +29,24 @@ from backend.routes.admin import create_admin_blueprint
 from backend.routes.auth import create_auth_blueprint
 from backend.routes.student import create_student_blueprint
 
+
+def _load_env_file() -> None:
+    env_path = Path(__file__).resolve().with_name('.env')
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_env_file()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRIMARY_DB_PATH = os.path.join(BASE_DIR, 'student_behavior.db')
 TOKEN_TTL_HOURS = float(os.getenv('TOKEN_TTL_HOURS', '12'))
@@ -2808,9 +2826,11 @@ app.register_blueprint(
 
 if __name__ == '__main__':
     debug_mode = str(os.getenv('FLASK_DEBUG', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    port = int(os.getenv('FLASK_PORT', '5000'))
     with app.app_context():
         _initialize_runtime_state()
-    app.run(debug=debug_mode, use_reloader=False)
+    app.run(host=host, port=port, debug=debug_mode, use_reloader=False)
 
 
 

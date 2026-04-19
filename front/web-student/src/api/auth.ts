@@ -12,7 +12,8 @@ function unwrapUser(payload: unknown): StudentUser {
     studentId: String(data.studentId ?? data.student_id ?? ''),
     name: String(data.name ?? studentUser.name),
     role: 'student',
-    token: String(data.token ?? studentUser.token)
+    token: String(data.token ?? studentUser.token),
+    tokenExpiresAt: data.tokenExpiresAt ? String(data.tokenExpiresAt) : undefined
   };
 }
 

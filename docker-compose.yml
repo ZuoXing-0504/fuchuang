@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5000
+    ports:
+      - "5000:5000"
+
+  web-admin:
+    image: node:20-alpine
+    working_dir: /workspace/front/web-admin
+    volumes:
+      - .:/workspace
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    command: >
+      sh -c "cp -n .env.example .env.local &&
+      npm install &&
+      npm run dev -- --host 0.0.0.0 --port 3200"
+    ports:
+      - "3200:3200"
+    depends_on:
+      - backend
+
+  web-student:
+    image: node:20-alpine
+    working_dir: /workspace/front/web-student
+    volumes:
+      - .:/workspace
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    command: >
+      sh -c "cp -n .env.example .env.local &&
+      npm install &&
+      npm run dev -- --host 0.0.0.0 --port 3201"
+    ports:
+      - "3201:3201"
+    depends_on:
+      - backend

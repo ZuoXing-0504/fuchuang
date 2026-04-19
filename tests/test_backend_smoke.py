@@ -50,7 +50,10 @@ class BackendSmokeTests(unittest.TestCase):
 
         login_response = client.post("/api/auth/login", json={"username": "admin001", "password": "123456", "role": "admin"})
         self.assertEqual(login_response.status_code, 200)
-        token = login_response.get_json()["data"]["token"]
+        login_payload = login_response.get_json()["data"]
+        self.assertIn("tokenExpiresAt", login_payload)
+        self.assertIn("permissions", login_payload)
+        token = login_payload["token"]
 
         dashboard = client.get("/api/admin/dashboard/overview", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(dashboard.status_code, 200)

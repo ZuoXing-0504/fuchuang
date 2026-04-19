@@ -13,7 +13,9 @@ function unwrapUser(payload: unknown): AuthUser {
     name: String(data.name ?? data.username ?? ''),
     role: String(data.role ?? 'admin') as AuthUser['role'],
     college: data.college ? String(data.college) : undefined,
-    token: String(data.token ?? '')
+    token: String(data.token ?? ''),
+    tokenExpiresAt: data.tokenExpiresAt ? String(data.tokenExpiresAt) : undefined,
+    permissions: Array.isArray(data.permissions) ? data.permissions.map((item) => String(item)) : undefined
   };
 }
 
