@@ -22,7 +22,21 @@ export async function login(payload) {
       role
     }
   });
-  return saveAndReturnUser(response, role);
+  const sessionUser = saveAndReturnUser(response, role);
+  try {
+    const currentUser = await getCurrentUser();
+    const normalizedUser = {
+      ...sessionUser,
+      ...currentUser,
+      token: currentUser.token || sessionUser.token,
+      tokenExpiresAt: currentUser.tokenExpiresAt || sessionUser.tokenExpiresAt,
+      role
+    };
+    saveSession(normalizedUser);
+    return normalizedUser;
+  } catch {
+    return sessionUser;
+  }
 }
 
 export async function registerStudent(payload) {

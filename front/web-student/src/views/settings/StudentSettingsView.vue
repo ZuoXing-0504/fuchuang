@@ -8,7 +8,6 @@ const auth = useStudentAuthStore();
 const preferences = useStudentLayoutPreferences();
 
 const accountRows = computed(() => [
-  { label: '姓名', value: auth.user?.name || '学生' },
   { label: '学号', value: auth.user?.studentId || '未绑定' },
   { label: '账号', value: auth.user?.username || '未提供' },
   { label: '角色', value: '学生账号' }

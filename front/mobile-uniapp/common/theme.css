@@ -1,6 +1,6 @@
 page {
-  background: #f5f6f1;
-  color: #223127;
+  background: linear-gradient(180deg, #f5f8fc 0%, #eef4fb 100%);
+  color: #1f2937;
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -9,6 +9,8 @@ page {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .hero-card,
@@ -18,11 +20,11 @@ page {
   background: #ffffff;
   border-radius: 28rpx;
   padding: 28rpx;
-  box-shadow: 0 18rpx 40rpx rgba(34, 49, 39, 0.08);
+  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.08);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #3b7a57, #d5a33a);
+  background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #ffffff;
 }
 
@@ -36,7 +38,7 @@ page {
 .muted,
 .helper-text,
 .empty-text {
-  color: #68756d;
+  color: #64748b;
   font-size: 24rpx;
   line-height: 1.7;
 }
@@ -52,15 +54,20 @@ page {
   justify-content: center;
 }
 
+.primary-btn::after,
+.secondary-btn::after {
+  border: none;
+}
+
 .primary-btn {
-  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #ffffff;
 }
 
 .secondary-btn {
-  background: #f0fdf4;
-  color: #2d7a4f;
-  border: 2rpx solid rgba(45, 122, 79, 0.18);
+  background: #f8fbff;
+  color: #1677ff;
+  border: 2rpx solid rgba(22, 119, 255, 0.14);
 }
 
 .status-card.loading {
@@ -116,11 +123,12 @@ page {
 .metric-card {
   padding: 24rpx;
   border-radius: 22rpx;
-  background: #f6f8f4;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 2rpx solid rgba(148, 163, 184, 0.12);
 }
 
 .metric-label {
-  color: #6a736c;
+  color: #64748b;
   font-size: 24rpx;
 }
 
@@ -128,7 +136,7 @@ page {
   margin-top: 12rpx;
   font-size: 34rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #0f172a;
 }
 
 .list-card {
@@ -139,4 +147,19 @@ page {
 .list-card:last-child {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+.field-input {
+  height: 88rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  border: 2rpx solid #dbe7f6;
+  background: #ffffff;
+  font-size: 28rpx;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.page-bottom-space {
+  height: calc(120rpx + env(safe-area-inset-bottom));
 }

@@ -12,6 +12,7 @@ export const useStudentAuthStore = defineStore('student-auth', () => {
   async function login(payload: LoginPayload) {
     user.value = await studentLogin(payload);
     persistUser(user.value);
+    await refreshProfile();
   }
 
   async function register(payload: RegisterPayload) {

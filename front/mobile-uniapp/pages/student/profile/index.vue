@@ -1,73 +1,109 @@
 <template>
   <view class="page-wrap">
     <view v-if="loading" class="status-card loading">
-      <view class="status-title">加载中</view>
-      <view class="helper-text">正在读取画像和解释信息...</view>
+      <view class="status-title">正在加载</view>
+      <view class="helper-text">正在同步画像与群体对比信息...</view>
     </view>
 
     <view v-else-if="error" class="status-card error">
-      <view class="status-title">画像加载失败</view>
+      <view class="status-title">加载失败</view>
       <view class="helper-text">{{ error }}</view>
       <button class="secondary-btn" @click="loadData">重新加载</button>
     </view>
 
-    <template v-else-if="data">
+    <template v-else-if="profile">
       <view class="hero-card">
-        <view class="card-title">{{ data.profileCategory }}</view>
-        <view class="hero-subtype" v-if="data.profileSubtype">{{ data.profileSubtype }}</view>
-        <view class="helper-copy">{{ data.profileExplanation || data.description }}</view>
-        <view class="chip-row">
-          <view class="chip">{{ data.riskLevel }}</view>
-          <view class="chip">{{ data.healthLevel }}</view>
-          <view class="chip">奖学金概率 {{ probabilityText }}</view>
+        <view class="card-title">{{ profile.profileCategory }}</view>
+        <view v-if="profile.profileSubtype" class="hero-copy">{{ profile.profileSubtype }}</view>
+        <view class="hero-copy">{{ categoryExplanation || profile.profileExplanation || profile.description }}</view>
+      </view>
+
+      <view v-if="subtypeExplanation" class="panel-card">
+        <view class="card-title">细分说明</view>
+        <view class="section-copy">{{ subtypeExplanation }}</view>
+      </view>
+
+      <view class="metric-grid">
+        <view class="metric-card">
+          <view class="metric-label">风险等级</view>
+          <view class="metric-value">{{ profile.riskLevel }}</view>
+        </view>
+        <view class="metric-card">
+          <view class="metric-label">健康水平</view>
+          <view class="metric-value">{{ profile.healthLevel }}</view>
+        </view>
+        <view class="metric-card">
+          <view class="metric-label">奖学金概率</view>
+          <view class="metric-value">{{ percentText(profile.scholarshipProbability) }}</view>
+        </view>
+        <view class="metric-card">
+          <view class="metric-label">群体标签数</view>
+          <view class="metric-value">{{ profile.profileHighlights.length }}</view>
         </view>
       </view>
 
-      <view class="panel-card">
+      <view v-if="profile.profileHighlights.length" class="panel-card">
         <view class="card-title">画像亮点</view>
         <view class="chip-row">
-          <view v-for="item in data.profileHighlights" :key="item" class="tag-chip">{{ item }}</view>
+          <view v-for="item in profile.profileHighlights" :key="item" class="tag-chip">{{ item }}</view>
         </view>
       </view>
 
-      <view class="panel-card">
-        <view class="card-title">优势与待提升</view>
-        <view class="section-block good">
-          <view class="section-label">优势领域</view>
-          <view v-for="item in data.strengths" :key="item" class="list-card">
-            <view class="muted emphasis">{{ item }}</view>
-          </view>
-        </view>
-        <view class="section-block warn">
-          <view class="section-label">待提升领域</view>
-          <view v-for="item in data.weaknesses" :key="item" class="list-card">
-            <view class="muted emphasis">{{ item }}</view>
+      <view v-if="compare && compare.rankingCards.length" class="panel-card">
+        <view class="card-title">群体位次</view>
+        <view class="metric-grid">
+          <view v-for="item in compare.rankingCards" :key="item.label" class="metric-card">
+            <view class="metric-label">{{ item.label }}</view>
+            <view class="metric-value">{{ item.value }}<text class="metric-suffix">{{ item.suffix }}</text></view>
           </view>
         </view>
       </view>
 
-      <view class="panel-card">
-        <view class="card-title">多维雷达拆解</view>
-        <view v-for="item in data.radar" :key="item.indicator" class="radar-item">
-          <view class="radar-head">
-            <view class="radar-label">{{ item.indicator }}</view>
-            <view class="radar-value">{{ item.value.toFixed(1) }}</view>
+      <view v-if="profile.radar.length" class="panel-card">
+        <view class="card-title">核心维度</view>
+        <view v-for="item in profile.radar" :key="item.indicator" class="radar-item">
+          <view class="row-head">
+            <view class="row-title">{{ item.indicator }}</view>
+            <view class="row-score">{{ item.value.toFixed(1) }}</view>
           </view>
-          <view class="radar-track">
-            <view class="radar-fill" :style="{ width: radarWidth(item.value) }"></view>
+          <view class="bar-track">
+            <view class="bar-fill" :style="{ width: widthText(item.value) }"></view>
           </view>
         </view>
       </view>
 
-      <view class="panel-card" v-if="riskDrivers.length">
-        <view class="card-title">优先干预建议</view>
-        <view v-for="item in riskDrivers" :key="item.id" class="driver-card">
-          <view class="driver-head">
-            <view class="driver-title">{{ item.title }}</view>
-            <view class="driver-priority">{{ priorityLabel(item.priority) }}</view>
+      <view v-if="profile.strengths.length || profile.weaknesses.length" class="panel-card">
+        <view class="card-title">强弱项</view>
+        <view v-if="profile.strengths.length">
+          <view class="sub-title">优势项</view>
+          <view class="chip-row">
+            <view v-for="item in profile.strengths" :key="item" class="tag-chip success">{{ item }}</view>
           </view>
-          <view class="muted">{{ item.description }}</view>
-          <view class="helper-text" v-if="item.reason">{{ item.reason }}</view>
+        </view>
+        <view v-if="profile.weaknesses.length" class="top-gap">
+          <view class="sub-title">待提升项</view>
+          <view class="chip-row">
+            <view v-for="item in profile.weaknesses" :key="item" class="tag-chip warning">{{ item }}</view>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="drivers.length" class="panel-card">
+        <view class="card-title">系统判断依据</view>
+        <view v-for="item in drivers" :key="item.id" class="driver-card">
+          <view class="row-head">
+            <view class="row-title">{{ item.title }}</view>
+            <view class="priority-chip">{{ item.priority }}</view>
+          </view>
+          <view class="section-copy">{{ item.description }}</view>
+          <view v-if="item.reason" class="helper-text">{{ item.reason }}</view>
+        </view>
+      </view>
+
+      <view v-if="compare && compare.explanations.length" class="panel-card">
+        <view class="card-title">群体对比说明</view>
+        <view v-for="item in compare.explanations" :key="item" class="list-card">
+          <view class="section-copy">{{ item }}</view>
         </view>
       </view>
     </template>
@@ -77,27 +113,21 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
+import { getStudentCompare, getStudentProfile } from '../../../api/student';
 import { ensureRole } from '../../../common/session';
-import { getStudentProfile } from '../../../api/student';
+import { getProfileCategoryExplanation, getProfileSubtypeExplanation } from '../../../common/profile-subtype';
 
 const loading = ref(true);
 const error = ref('');
-const data = ref(null);
+const profile = ref(null);
+const compare = ref(null);
 
-const probabilityText = computed(() => {
-  const current = data.value || {};
-  return ((Number(current.scholarshipProbability) || 0) * 100).toFixed(1) + '%';
-});
-
-const riskDrivers = computed(() => {
-  const current = data.value || {};
-  return current.riskDrivers || [];
-});
+const drivers = computed(() => ((profile.value && profile.value.riskDrivers) || []).slice(0, 5));
+const categoryExplanation = computed(() => getProfileCategoryExplanation(profile.value && profile.value.profileCategory));
+const subtypeExplanation = computed(() => getProfileSubtypeExplanation(profile.value && profile.value.profileSubtype));
 
 onShow(() => {
-  if (!ensureRole('student')) {
-    return;
-  }
+  if (!ensureRole('student')) return;
   loadData();
 });
 
@@ -105,133 +135,111 @@ async function loadData() {
   loading.value = true;
   error.value = '';
   try {
-    data.value = await getStudentProfile();
+    const [profileResult, compareResult] = await Promise.all([getStudentProfile(), getStudentCompare()]);
+    profile.value = profileResult;
+    compare.value = compareResult;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '学生画像加载失败';
+    error.value = err instanceof Error ? err.message : '画像加载失败';
   } finally {
     loading.value = false;
   }
 }
 
-function priorityLabel(priority) {
-  if (priority === 'high') return '高优先级';
-  if (priority === 'low') return '低优先级';
-  return '中优先级';
+function widthText(value) {
+  return `${Math.max(Math.min(Number(value) || 0, 100), 4)}%`;
 }
 
-function radarWidth(value) {
-  return Math.max(Math.min(Number(value) || 0, 100), 4) + '%';
+function percentText(value) {
+  return `${Math.round((Number(value) || 0) * 100)}%`;
 }
 </script>
 
 <style scoped>
-.hero-subtype {
-  font-size: 28rpx;
-  font-weight: 700;
-  margin-bottom: 10rpx;
-}
-
-.helper-copy {
-  font-size: 26rpx;
+.hero-copy {
+  font-size: 24rpx;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.92);
 }
 
-.section-block {
-  padding: 24rpx;
-  border-radius: 20rpx;
-  margin-top: 18rpx;
+.metric-suffix {
+  font-size: 22rpx;
+  margin-left: 6rpx;
 }
 
-.section-block.good {
-  background: #f0fdf4;
-}
-
-.section-block.warn {
-  background: #fffbeb;
-}
-
-.section-label {
+.sub-title {
   font-size: 26rpx;
   font-weight: 800;
   color: #1a2e1f;
   margin-bottom: 12rpx;
 }
 
-.emphasis {
-  color: #1a2e1f;
-  font-weight: 700;
+.top-gap {
+  margin-top: 18rpx;
 }
 
-.radar-item {
+.tag-chip.success {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.tag-chip.warning {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.radar-item,
+.driver-card {
   padding: 18rpx 0;
   border-bottom: 1rpx solid #eef1eb;
 }
 
-.radar-item:last-child {
+.radar-item:last-child,
+.driver-card:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.radar-head {
+.row-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10rpx;
-}
-
-.radar-label {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #1a2e1f;
-}
-
-.radar-value {
-  font-size: 24rpx;
-  color: #2d7a4f;
-  font-weight: 800;
-}
-
-.radar-track {
-  height: 12rpx;
-  border-radius: 999rpx;
-  background: #e5efe6;
-  overflow: hidden;
-}
-
-.radar-fill {
-  height: 100%;
-  background: linear-gradient(135deg, #2d7a4f, #3b9464);
-  border-radius: 999rpx;
-}
-
-.driver-card {
-  padding: 20rpx;
-  border-radius: 20rpx;
-  background: #f8faf6;
-  margin-top: 16rpx;
-}
-
-.driver-head {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 16rpx;
   margin-bottom: 10rpx;
 }
 
-.driver-title {
-  font-size: 28rpx;
-  font-weight: 800;
-  color: #1a2e1f;
+.row-title,
+.section-copy {
+  font-size: 26rpx;
+  color: #223127;
 }
 
-.driver-priority {
-  font-size: 22rpx;
-  color: #b45309;
-  background: #fff7ed;
-  padding: 6rpx 14rpx;
+.row-title {
+  font-weight: 800;
+}
+
+.row-score {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #2d7a4f;
+}
+
+.bar-track {
+  height: 12rpx;
+  background: #e5efe6;
   border-radius: 999rpx;
-  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  border-radius: 999rpx;
+}
+
+.priority-chip {
+  font-size: 22rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: #eff6ff;
+  color: #2563eb;
 }
 </style>

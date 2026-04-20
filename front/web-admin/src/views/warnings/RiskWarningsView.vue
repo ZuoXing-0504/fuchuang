@@ -38,7 +38,7 @@ const registrationStates = computed(() => [...new Set(source.value.map((item) =>
 
 const filteredRows = computed(() => source.value.filter((item) => {
   const q = keyword.value.trim();
-  return (!q || item.studentId.includes(q) || item.name.includes(q)) &&
+  return (!q || item.studentId.includes(q)) &&
     (!filters.college || item.college === filters.college) &&
     (!filters.major || item.major === filters.major) &&
     (!filters.riskLevel || item.riskLevel === filters.riskLevel) &&
@@ -77,7 +77,7 @@ function subtypeExplanation(subtype?: string) {
         <p class="status-inline">当前已加载 {{ source.length }} 条学生记录</p>
       </div>
       <div class="header-actions">
-        <el-input v-model="keyword" placeholder="输入学号或姓名查询" clearable style="width: 240px" />
+        <el-input v-model="keyword" placeholder="输入学号查询" clearable style="width: 240px" />
         <el-button @click="filterDrawerVisible = true">筛选</el-button>
         <el-button @click="loadWarnings" :loading="loading">刷新</el-button>
       </div>
@@ -101,7 +101,6 @@ function subtypeExplanation(subtype?: string) {
         </template>
         <el-table :data="filteredRows" height="620" stripe @row-click="handleRowClick">
           <el-table-column prop="studentId" label="学号" width="140" />
-          <el-table-column prop="name" label="姓名" width="100" />
           <el-table-column prop="college" label="学院" min-width="180" />
           <el-table-column prop="major" label="专业" min-width="160" />
           <el-table-column prop="riskLevel" label="风险等级" width="100" />
@@ -168,7 +167,7 @@ function subtypeExplanation(subtype?: string) {
 
     <el-drawer v-model="drawerVisible" title="学生概览" size="480px" :destroy-on-close="true">
       <div v-if="currentDetail" class="drawer-content">
-        <div class="drawer-name">{{ currentDetail.name }}</div>
+        <div class="drawer-name">{{ currentDetail.studentId }}</div>
         <div class="drawer-meta">{{ currentDetail.studentId }} · {{ currentDetail.college }} · {{ currentDetail.major }}</div>
         <div class="drawer-tags">
           <span class="drawer-tag risk">{{ currentDetail.riskLevel }}</span>

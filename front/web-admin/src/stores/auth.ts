@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
   async function login(payload: LoginPayload) {
     user.value = await adminLogin(payload);
     persistUser(user.value);
+    await refreshProfile();
   }
 
   async function refreshProfile() {

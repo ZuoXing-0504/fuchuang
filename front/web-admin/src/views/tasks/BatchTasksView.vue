@@ -57,7 +57,7 @@ const queue = computed(() => {
       if (activeQuickFilter.value === 'high' && item.riskLevel !== '高风险') return false;
       if (activeQuickFilter.value === 'medium' && item.riskLevel !== '中风险') return false;
       if (activeQuickFilter.value === 'registered' && item.registrationStatus !== '已注册') return false;
-      return !q || item.studentId.toLowerCase().includes(q) || item.name.toLowerCase().includes(q) || item.college.toLowerCase().includes(q);
+      return !q || item.studentId.toLowerCase().includes(q) || item.college.toLowerCase().includes(q);
     })
     .sort((a, b) => {
       const riskGap = (riskWeight[b.riskLevel] ?? 0) - (riskWeight[a.riskLevel] ?? 0);
@@ -149,7 +149,7 @@ function applyQuickFilter(filter: 'all' | 'high' | 'medium' | 'registered') {
         </div>
       </template>
 
-      <el-input v-model="keyword" placeholder="按学号、姓名或学院过滤" clearable class="search-box" />
+      <el-input v-model="keyword" placeholder="按学号或学院过滤" clearable class="search-box" />
 
       <div v-if="loading" class="loading-box">正在加载真实名单...</div>
       <div v-else class="queue-grid">
@@ -160,7 +160,7 @@ function applyQuickFilter(filter: 'all' | 'high' | 'medium' | 'registered') {
           @click="openDetail(item.studentId)"
         >
           <div class="queue-main">
-            <div class="queue-name">{{ item.name || item.studentId }}</div>
+            <div class="queue-name">{{ item.studentId }}</div>
             <div class="queue-meta">{{ item.studentId }} · {{ item.college }} · {{ item.profileCategory }}</div>
           </div>
           <div class="queue-side">
@@ -177,7 +177,7 @@ function applyQuickFilter(filter: 'all' | 'high' | 'medium' | 'registered') {
       <div v-else-if="detail" class="drawer-shell">
         <div class="detail-hero dark-panel">
           <div>
-            <div class="detail-name">{{ detail.name }}</div>
+            <div class="detail-name">{{ detail.studentId }}</div>
             <div class="detail-meta">{{ detail.studentId }} · {{ detail.college }} · {{ detail.major }}</div>
           </div>
           <div class="detail-tags">

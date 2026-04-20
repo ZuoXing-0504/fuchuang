@@ -1,43 +1,42 @@
 <template>
   <view class="login-page">
     <view class="login-bg">
-      <view class="bg-circle c1"></view>
-      <view class="bg-circle c2"></view>
+      <view class="bg-orb orb-a"></view>
+      <view class="bg-orb orb-b"></view>
+      <view class="bg-grid"></view>
     </view>
 
     <view class="login-container">
       <view class="brand-section">
-        <view class="brand-icon">SB</view>
-        <view class="brand-title">{{ currentRole === 'student' ? '学生行为画像系统' : '学生行为分析后台' }}</view>
-        <view class="brand-subtitle">{{ currentRole === 'student' ? 'Student Growth Intelligence' : 'Admin Intelligence Console' }}</view>
+        <view class="brand-icon">
+          <text>{{ currentRole === 'student' ? 'SG' : 'AC' }}</text>
+        </view>
+        <view class="brand-title">学生行为分析移动端</view>
+        <view class="brand-subtitle">{{ currentRole === 'student' ? '学生成长中心' : '管理员移动后台' }}</view>
       </view>
 
       <view class="panel-card form-shell">
         <view class="role-tabs">
-          <view
-            class="role-tab"
-            :class="{ active: currentRole === 'student' }"
-            @click="switchRole('student')"
-          >
+          <view class="role-tab" :class="{ active: currentRole === 'student' }" @click="switchRole('student')">
             学生端
           </view>
-          <view
-            class="role-tab"
-            :class="{ active: currentRole === 'admin' }"
-            @click="switchRole('admin')"
-          >
-            管理员端
+          <view class="role-tab" :class="{ active: currentRole === 'admin' }" @click="switchRole('admin')">
+            管理端
           </view>
         </view>
 
         <template v-if="currentRole === 'student'">
           <view class="mode-tabs">
-            <view class="mode-tab" :class="{ active: studentMode === 'login' }" @click="studentMode = 'login'">登录</view>
-            <view class="mode-tab" :class="{ active: studentMode === 'register' }" @click="studentMode = 'register'">注册</view>
+            <view class="mode-tab" :class="{ active: studentMode === 'login' }" @click="studentMode = 'login'">
+              登录
+            </view>
+            <view class="mode-tab" :class="{ active: studentMode === 'register' }" @click="studentMode = 'register'">
+              注册
+            </view>
           </view>
 
           <view v-if="studentMode === 'login'" class="form-stack">
-            <view class="helper-text">使用“用户名或学号 + 密码”进入学生端，查看画像、趋势、报告和建议。</view>
+            <view class="helper-text">支持输入用户名或学号登录。</view>
             <input v-model="studentLoginForm.username" class="field-input" placeholder="请输入用户名或学号" />
             <input v-model="studentLoginForm.password" class="field-input" placeholder="请输入密码" password />
             <button class="primary-btn" :disabled="loading" @click="handleStudentLogin">
@@ -46,10 +45,10 @@
           </view>
 
           <view v-else class="form-stack">
-            <view class="helper-text">只有当前样本库中存在的学号可以注册，一个学号只能绑定一个学生账号。</view>
-            <input v-model="registerForm.studentId" class="field-input" placeholder="请输入分析样本中的学号" />
-            <input v-model="registerForm.username" class="field-input" placeholder="请设置登录用户名" />
-            <input v-model="registerForm.password" class="field-input" placeholder="至少 6 位密码" password />
+            <view class="helper-text">只有在当前分析样本中的学号才可以注册。</view>
+            <input v-model="registerForm.studentId" class="field-input" placeholder="请输入学号" />
+            <input v-model="registerForm.username" class="field-input" placeholder="请输入用户名" />
+            <input v-model="registerForm.password" class="field-input" placeholder="请输入密码（至少 6 位）" password />
             <input v-model="registerForm.confirmPassword" class="field-input" placeholder="请再次输入密码" password />
             <button class="primary-btn" :disabled="loading" @click="handleRegister">
               {{ loading ? '注册中...' : '创建学生账号' }}
@@ -59,14 +58,14 @@
 
         <template v-else>
           <view class="form-stack">
-            <view class="helper-text">登录管理后台查看全样本分析、风险名单、单学生详情和完整报告。</view>
+            <view class="helper-text">管理员可查看总览、风险名单、预测模块和完整报告。</view>
             <input v-model="adminForm.username" class="field-input" placeholder="请输入管理员账号" />
             <input v-model="adminForm.password" class="field-input" placeholder="请输入密码" password />
             <button class="primary-btn" :disabled="loading" @click="handleAdminLogin">
-              {{ loading ? '登录中...' : '进入管理后台' }}
+              {{ loading ? '登录中...' : '进入管理端' }}
             </button>
             <view class="guide-box">
-              <view>默认演示管理员：admin001</view>
+              <view>默认账号：admin001</view>
               <view>默认密码：123456</view>
             </view>
           </view>
@@ -74,11 +73,12 @@
 
         <view v-if="error" class="status-card error">
           <view class="status-title">操作失败</view>
-          <view class="helper-text">{{ error }}</view>
+          <view class="helper-text error-text">{{ error }}</view>
         </view>
+
         <view v-if="success" class="status-card loading">
           <view class="status-title">操作成功</view>
-          <view class="helper-text">{{ success }}</view>
+          <view class="helper-text success-text">{{ success }}</view>
         </view>
       </view>
     </view>
@@ -130,6 +130,10 @@ function switchRole(role) {
 }
 
 async function handleStudentLogin() {
+  if (!studentLoginForm.username.trim() || !studentLoginForm.password) {
+    error.value = '请输入用户名和密码';
+    return;
+  }
   loading.value = true;
   resetStatus();
   try {
@@ -139,29 +143,47 @@ async function handleStudentLogin() {
     });
     handleLoginSuccess(user);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '学生登录失败，请检查后端是否启动';
+    error.value = err instanceof Error ? err.message : '学生登录失败，请稍后再试';
   } finally {
     loading.value = false;
   }
 }
 
 async function handleRegister() {
+  if (!registerForm.studentId.trim() || !registerForm.username.trim()) {
+    error.value = '请先填写学号和用户名';
+    return;
+  }
+  if (registerForm.password.length < 6) {
+    error.value = '密码长度不能少于 6 位';
+    return;
+  }
+  if (registerForm.password !== registerForm.confirmPassword) {
+    error.value = '两次输入的密码不一致';
+    return;
+  }
   loading.value = true;
   resetStatus();
   try {
     const result = await registerStudent(registerForm);
-    success.value = `注册成功，请用账号 ${result.username} 返回登录。后端地址：${getDefaultApiBase()}`;
+    success.value = `注册完成，请使用账号 ${result.username} 登录。当前接口地址：${getDefaultApiBase()}`;
     studentMode.value = 'login';
     studentLoginForm.username = result.username;
     studentLoginForm.password = '';
+    registerForm.password = '';
+    registerForm.confirmPassword = '';
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '注册失败，请稍后重试';
+    error.value = err instanceof Error ? err.message : '注册失败，请稍后再试';
   } finally {
     loading.value = false;
   }
 }
 
 async function handleAdminLogin() {
+  if (!adminForm.username.trim() || !adminForm.password) {
+    error.value = '请输入管理员账号和密码';
+    return;
+  }
   loading.value = true;
   resetStatus();
   try {
@@ -171,7 +193,7 @@ async function handleAdminLogin() {
     });
     handleLoginSuccess(user);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '管理员登录失败，请检查后端是否启动';
+    error.value = err instanceof Error ? err.message : '管理员登录失败，请稍后再试';
   } finally {
     loading.value = false;
   }
@@ -181,7 +203,7 @@ async function handleAdminLogin() {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(160deg, #f0fdf4, #f8faf6);
+  background: linear-gradient(180deg, #08111f 0%, #12263f 58%, #eef4fb 58%, #eef4fb 100%);
   position: relative;
   overflow: hidden;
 }
@@ -192,33 +214,42 @@ async function handleAdminLogin() {
   pointer-events: none;
 }
 
-.bg-circle {
+.bg-orb {
   position: absolute;
   border-radius: 50%;
+  filter: blur(10rpx);
 }
 
-.c1 {
-  width: 500rpx;
-  height: 500rpx;
-  background: rgba(45, 122, 79, 0.06);
-  top: -200rpx;
-  left: -100rpx;
+.orb-a {
+  width: 420rpx;
+  height: 420rpx;
+  background: rgba(56, 189, 248, 0.2);
+  top: -120rpx;
+  right: -60rpx;
 }
 
-.c2 {
-  width: 400rpx;
-  height: 400rpx;
-  background: rgba(212, 163, 42, 0.05);
-  bottom: -100rpx;
-  right: -100rpx;
+.orb-b {
+  width: 360rpx;
+  height: 360rpx;
+  background: rgba(37, 99, 235, 0.16);
+  left: -120rpx;
+  top: 240rpx;
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 32rpx 32rpx;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.15));
 }
 
 .login-container {
   position: relative;
-  padding: 96rpx 32rpx 48rpx;
+  padding: 88rpx 32rpx 48rpx;
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 28rpx;
 }
 
 .brand-section {
@@ -232,46 +263,41 @@ async function handleAdminLogin() {
   width: 120rpx;
   height: 120rpx;
   border-radius: 36rpx;
-  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  background: linear-gradient(135deg, #1677ff, #5aa9ff);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 44rpx;
+  font-size: 40rpx;
   font-weight: 900;
-  box-shadow: 0 12rpx 40rpx rgba(45, 122, 79, 0.3);
+  box-shadow: 0 16rpx 48rpx rgba(22, 119, 255, 0.3);
 }
 
 .brand-title {
   font-size: 42rpx;
   font-weight: 900;
-  color: #1a2e1f;
+  color: #ffffff;
+  text-align: center;
 }
 
 .brand-subtitle {
   font-size: 24rpx;
-  color: #5f7267;
-  letter-spacing: 1rpx;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .form-shell {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2rpx solid rgba(148, 163, 184, 0.14);
 }
 
 .role-tabs,
 .mode-tabs {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14rpx;
-}
-
-.role-tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mode-tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .role-tab,
@@ -283,14 +309,14 @@ async function handleAdminLogin() {
   justify-content: center;
   font-size: 28rpx;
   font-weight: 700;
-  color: #5f7267;
-  background: #f8faf6;
-  border: 2rpx solid #e4ece2;
+  color: #64748b;
+  background: #f8fbff;
+  border: 2rpx solid #dbe7f6;
 }
 
 .role-tab.active,
 .mode-tab.active {
-  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #ffffff;
   border-color: transparent;
 }
@@ -305,10 +331,11 @@ async function handleAdminLogin() {
   height: 88rpx;
   padding: 0 24rpx;
   border-radius: 18rpx;
-  border: 2rpx solid #dbe3da;
+  border: 2rpx solid #dbe7f6;
   background: #ffffff;
   font-size: 28rpx;
-  color: #1a2e1f;
+  color: #0f172a;
+  box-sizing: border-box;
 }
 
 .guide-box {
@@ -318,5 +345,13 @@ async function handleAdminLogin() {
   color: #1d4ed8;
   font-size: 24rpx;
   line-height: 1.8;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+.success-text {
+  color: #1677ff;
 }
 </style>

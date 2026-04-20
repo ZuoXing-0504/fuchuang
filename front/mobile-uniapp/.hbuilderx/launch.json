@@ -3,7 +3,8 @@
     "configurations" : [
         {
             "customPlaygroundType" : "device",
-            "playground" : "standard",
+            "packageName" : "uni.app.UNISTUDENTBEHAVIOR",
+            "playground" : "custom",
             "type" : "uni-app:app-android"
         }
     ]

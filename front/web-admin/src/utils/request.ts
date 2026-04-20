@@ -1,6 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5000';
 const USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true';
 const STORAGE_KEY = import.meta.env.VITE_AUTH_STORAGE_KEY ?? 'student-behavior-admin-auth';
+const REQUEST_TIMEOUT_MS = 15000;
 
 export interface RequestOptions<T, R = T> {
   options?: RequestInit;
@@ -16,14 +17,22 @@ export async function request<T, R = T>(url: string, config?: RequestOptions<T, 
 
   try {
     const token = readToken();
-    const response = await fetch(`${API_BASE}${url}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options?.headers ?? {})
-      },
-      ...options
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE}${url}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options?.headers ?? {})
+        },
+        signal: controller.signal,
+        ...options
+      });
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     if (!response.ok) {
       if (response.status === 401) {
         handleUnauthorized();
@@ -36,6 +45,9 @@ export async function request<T, R = T>(url: string, config?: RequestOptions<T, 
     const raw = (await response.json()) as R;
     return adapter ? adapter(raw) : ((raw as unknown) as T);
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('后端接口响应超时，请确认 Flask 服务已启动并可访问。');
+    }
     if (fallback && (!isUnauthorizedError(error) || USE_MOCK)) {
       return fallback();
     }

@@ -37,7 +37,7 @@ const activeNav = computed(() => {
   return match?.label ?? '首页';
 });
 
-const displayName = computed(() => auth.user?.name || auth.user?.studentId || '学生');
+const displayName = computed(() => auth.user?.studentId || auth.user?.username || '学生账号');
 const displayInitial = computed(() => displayName.value.charAt(0) || '学');
 const contextTags = computed(() => [
   auth.user?.studentId || '当前账号',

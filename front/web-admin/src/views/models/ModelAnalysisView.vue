@@ -271,7 +271,7 @@ function openStudentReport() {
 
       <div v-if="studentDetail" class="student-result-wrap">
         <div class="student-meta">
-          <div class="student-name">{{ studentDetail.name }}</div>
+          <div class="student-name">{{ studentDetail.studentId }}</div>
           <div class="student-copy">{{ studentDetail.studentId }} · {{ studentDetail.college }} · {{ studentDetail.major }}</div>
         </div>
         <div class="student-result-grid">

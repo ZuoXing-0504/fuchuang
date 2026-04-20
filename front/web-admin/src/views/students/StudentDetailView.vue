@@ -174,7 +174,7 @@ function isMissingValue(value?: string) {
 
     <div class="hero panel-card">
       <div>
-        <div class="hero-name">{{ detail.name }}</div>
+        <div class="hero-name">{{ detail.studentId }}</div>
         <div class="hero-meta">{{ detail.studentId }} · {{ detail.college }} · {{ detail.major }}</div>
         <div v-if="detail.profileSubtype" class="hero-subtype">{{ detail.profileSubtype }}</div>
       </div>

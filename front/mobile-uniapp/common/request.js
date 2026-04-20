@@ -23,10 +23,11 @@ export function request(url, options = {}) {
       ...header
     };
     if (token) {
-      requestHeader.Authorization = 'Bearer ' + token;
+      requestHeader.Authorization = `Bearer ${token}`;
     }
+
     uni.request({
-      url: getApiBase() + url,
+      url: `${getApiBase()}${url}`,
       method,
       data,
       header: requestHeader,
@@ -40,10 +41,10 @@ export function request(url, options = {}) {
           clearSession();
           uni.reLaunch({ url: '/pages/login/index' });
         }
-        reject(new Error(normalizeErrorMessage(payload, '请求失败：' + statusCode)));
+        reject(new Error(normalizeErrorMessage(payload, `请求失败，状态码 ${statusCode}`)));
       },
       fail: (error) => {
-        const message = error && error.errMsg ? error.errMsg : '网络请求失败，请检查后端是否启动';
+        const message = error && error.errMsg ? error.errMsg : '网络请求失败，请检查手机和后端是否在同一局域网。';
         reject(new Error(message));
       }
     });

@@ -1,31 +1,40 @@
 {
   "pages": [
-    { "path": "pages/login/index", "style": { "navigationBarTitleText": "统一登录" } },
-    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "管理员首页" } },
-    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "风险名单" } },
-    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "单学生详情" } },
-    { "path": "pages/admin/student-report/index", "style": { "navigationBarTitleText": "完整报告" } },
-    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "首页" } },
-    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "我的画像" } },
-    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "趋势对比" } },
-    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "个性化报告" } },
-    { "path": "pages/student/mine/index", "style": { "navigationBarTitleText": "我的" } }
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "Login" } },
+    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "Admin Home" } },
+    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "Warnings" } },
+    { "path": "pages/admin/profiles/index", "style": { "navigationBarTitleText": "Profiles" } },
+    { "path": "pages/admin/tasks/index", "style": { "navigationBarTitleText": "Tasks" } },
+    { "path": "pages/admin/models/index", "style": { "navigationBarTitleText": "Models" } },
+    { "path": "pages/admin/analysis/index", "style": { "navigationBarTitleText": "Analysis" } },
+    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "Student Detail" } },
+    { "path": "pages/admin/student-report/index", "style": { "navigationBarTitleText": "Student Report" } },
+    { "path": "pages/admin/settings/index", "style": { "navigationBarTitleText": "Settings" } },
+    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "Home" } },
+    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "Profile" } },
+    { "path": "pages/student/predict/index", "style": { "navigationBarTitleText": "Predict" } },
+    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "Report" } },
+    { "path": "pages/student/settings/index", "style": { "navigationBarTitleText": "Settings" } },
+    { "path": "pages/student/compare/index", "style": { "navigationBarTitleText": "Compare" } },
+    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "Trend" } },
+    { "path": "pages/student/analysis/index", "style": { "navigationBarTitleText": "Analysis" } }
   ],
   "tabBar": {
-    "color": "#6a736c",
-    "selectedColor": "#3b7a57",
+    "color": "#64748b",
+    "selectedColor": "#1677ff",
     "backgroundColor": "#ffffff",
+    "borderStyle": "black",
     "list": [
-      { "pagePath": "pages/student/home/index", "text": "首页" },
-      { "pagePath": "pages/student/profile/index", "text": "画像" },
-      { "pagePath": "pages/student/trend/index", "text": "趋势" },
-      { "pagePath": "pages/student/report/index", "text": "报告" },
-      { "pagePath": "pages/student/mine/index", "text": "我的" }
+      { "pagePath": "pages/student/home/index", "text": "Home" },
+      { "pagePath": "pages/student/profile/index", "text": "Profile" },
+      { "pagePath": "pages/student/predict/index", "text": "Predict" },
+      { "pagePath": "pages/student/report/index", "text": "Report" },
+      { "pagePath": "pages/student/settings/index", "text": "Settings" }
     ]
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#f5f6f1"
+    "backgroundColor": "#f5f8fc"
   }
 }

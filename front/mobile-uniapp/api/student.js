@@ -1,6 +1,9 @@
 import {
+  adaptRecommendationGroups,
   adaptStudentCompare,
   adaptStudentHome,
+  adaptStudentPredictionResult,
+  adaptStudentPredictionSchema,
   adaptStudentProfile,
   adaptStudentReport,
   adaptStudentTrends
@@ -29,10 +32,23 @@ export async function getStudentReport() {
 
 export async function getStudentRecommendations() {
   const response = await request('/api/student/recommendations');
-  return response && response.data ? response.data : response;
+  return adaptRecommendationGroups(response);
 }
 
 export async function getStudentCompare() {
   const response = await request('/api/student/compare/group');
   return adaptStudentCompare(response);
+}
+
+export async function getStudentPredictionSchema() {
+  const response = await request('/api/student/predict/schema');
+  return adaptStudentPredictionSchema(response);
+}
+
+export async function submitStudentManualPredict(values) {
+  const response = await request('/api/student/predict/manual', {
+    method: 'POST',
+    data: { values }
+  });
+  return adaptStudentPredictionResult(response);
 }

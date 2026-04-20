@@ -1,5 +1,10 @@
 import {
+  adaptAnalysisResults,
+  adaptBatchTask,
+  adaptBatchTaskList,
+  adaptClusterInsights,
   adaptDashboardOverview,
+  adaptModelSummary,
   adaptStudentDetail,
   adaptWarnings
 } from './adapter';
@@ -17,7 +22,35 @@ export async function getWarnings(params = {}) {
   return adaptWarnings(response);
 }
 
+export async function getClusterInsights() {
+  const response = await request('/api/admin/cluster/profile');
+  return adaptClusterInsights(response);
+}
+
 export async function getStudentDetail(studentId) {
   const response = await request(`/api/admin/student/${encodeURIComponent(studentId)}`);
   return adaptStudentDetail(response);
+}
+
+export async function getModelSummary() {
+  const response = await request('/api/admin/model/metrics');
+  return adaptModelSummary(response);
+}
+
+export async function getTaskHistory() {
+  const response = await request('/api/admin/tasks/history');
+  return adaptBatchTaskList(response);
+}
+
+export async function submitBatchPredict(fileName) {
+  const response = await request('/api/admin/tasks/batch-predict', {
+    method: 'POST',
+    data: { fileName }
+  });
+  return adaptBatchTask(response);
+}
+
+export async function getAnalysisResults() {
+  const response = await request('/api/admin/analysis/results');
+  return adaptAnalysisResults(response);
 }

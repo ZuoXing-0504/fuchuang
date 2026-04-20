@@ -124,7 +124,7 @@ const entryDetails = computed(() => {
   }
   if (entry.key === 'warnings') {
     return topRiskStudents.value.map((student) => ({
-      title: `${student.name || student.studentId} · ${student.riskLevel}`,
+      title: `${student.studentId} · ${student.riskLevel}`,
       copy: `${student.studentId} · ${student.college} · ${student.profileCategory}${student.profileSubtype ? ` / ${student.profileSubtype}` : ''}`
     }));
   }
@@ -136,7 +136,7 @@ const entryDetails = computed(() => {
   }
   if (entry.key === 'tasks') {
     return topRiskStudents.value.map((student) => ({
-      title: student.name || student.studentId,
+      title: student.studentId,
       copy: `${student.college} · ${student.major} · 综合发展 ${student.scorePrediction.toFixed(1)}`
     }));
   }
@@ -257,7 +257,7 @@ function jumpToEntry(route: string) {
             @click="router.push(`/students/${student.studentId}`)"
           >
             <div class="student-main">
-              <div class="student-name">{{ student.name || student.studentId }}</div>
+              <div class="student-name">{{ student.studentId }}</div>
               <div class="student-meta">{{ student.studentId }} · {{ student.college }} · {{ student.major }}</div>
             </div>
             <div class="student-side">

@@ -261,7 +261,7 @@ function subtypeExplanation(subtype?: string) {
             <div class="student-list">
               <div v-for="item in currentAggregate.students.slice(0, 20)" :key="item.studentId" class="student-item">
                 <div>
-                  <div class="student-name">{{ item.name || item.studentId }}</div>
+                  <div class="student-name">{{ item.studentId }}</div>
                   <div class="student-meta">{{ item.studentId }} · {{ item.profileCategory }} · {{ item.profileSubtype || '未细分' }}</div>
                   <div v-if="subtypeExplanation(item.profileSubtype)" class="student-subtype-note">{{ subtypeExplanation(item.profileSubtype) }}</div>
                 </div>

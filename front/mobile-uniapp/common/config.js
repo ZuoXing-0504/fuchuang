@@ -1,4 +1,5 @@
-const DEFAULT_API_BASE = 'http://127.0.0.1:5000';
+// Use the host machine's LAN address so the packaged app can reach the backend from a phone.
+const DEFAULT_API_BASE = 'http://192.168.5.8:5000';
 const API_BASE_STORAGE_KEY = 'student-behavior-mobile-api-base';
 
 export function getApiBase() {

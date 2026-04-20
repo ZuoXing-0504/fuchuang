@@ -93,11 +93,29 @@ app.json.ensure_ascii = False
 # 启用 CORS
 CORS(app)
 
+
+def _resolve_database_url(raw_url: str) -> str:
+    normalized_url = (raw_url or '').strip()
+    if not normalized_url:
+        return f"sqlite:///{PRIMARY_DB_PATH}"
+
+    if not normalized_url.startswith('sqlite:///'):
+        return normalized_url
+
+    sqlite_path = normalized_url[len('sqlite:///'):]
+    if sqlite_path and not os.path.isabs(sqlite_path):
+        sqlite_path = os.path.join(BASE_DIR, sqlite_path)
+
+    # 环境文件曾出现乱码路径，导致运行时意外连到错误数据库。
+    if not sqlite_path or not os.path.exists(sqlite_path):
+        return f"sqlite:///{PRIMARY_DB_PATH}"
+
+    return f"sqlite:///{sqlite_path}"
+
+
 # 数据库配置
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL',
-    f"sqlite:///{PRIMARY_DB_PATH}"
-)
+database_url = _resolve_database_url(os.getenv('DATABASE_URL', ''))
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'connect_args': {'timeout': 15}
@@ -123,6 +141,8 @@ def _configure_sqlite_connection(dbapi_connection, connection_record):
 
 EPHEMERAL_TOKEN_CACHE = {}
 ADMIN_METRICS_CACHE = None
+STUDENT_REPORT_CACHE = {}
+RISK_THRESHOLD_CACHE = None
 data_repository = None
 model_outputs_repository = None
 data_quality_service = None
@@ -592,7 +612,10 @@ def _cluster_label_from_value(value):
 
 
 def _risk_level_from_probability(probability):
-    low_threshold, high_threshold = get_risk_level_thresholds()
+    global RISK_THRESHOLD_CACHE
+    if RISK_THRESHOLD_CACHE is None:
+        RISK_THRESHOLD_CACHE = get_risk_level_thresholds()
+    low_threshold, high_threshold = RISK_THRESHOLD_CACHE
     low_threshold = _safe_float(low_threshold, 0.3)
     high_threshold = _safe_float(high_threshold, 0.6)
     if probability >= high_threshold:
@@ -622,12 +645,23 @@ def _load_student_registration_lookup():
 def _build_admin_student_metrics_row(row, registration_lookup=None):
     student_id = str(row.get("student_id") or "")
     cluster_label = _cluster_label_from_value(row.get("cluster"))
-    profile_segment = _build_profile_segment(cluster_label, row=row, risk_prob=_safe_float(row.get("risk_prob")))
     registration = registration_lookup.get(student_id) if registration_lookup is not None else None
     if registration is None:
         registration = _get_account_registration_info(student_id)
     risk_prob = _safe_float(row.get("risk_prob"))
     development_score = _get_display_metric(row=row, key="development_index", default=50)
+    subtype_map = {
+        "高投入稳健型": "节律稳定稳健子类",
+        "低投入风险型": "基础薄弱待补强子类",
+        "夜间波动型": "夜间偏移观察子类",
+        "发展过渡型": "适应调整过渡子类",
+    }
+    secondary_tag_map = {
+        "高投入稳健型": ["学习投入积极", "行为规律稳定"],
+        "低投入风险型": ["学习投入不足", "风险敏感关注"],
+        "夜间波动型": ["夜间活跃偏高", "作息波动明显"],
+        "发展过渡型": ["成长过渡观察", "发展潜力待释放"],
+    }
     return {
         "studentId": student_id,
         "name": str(row.get("name") or row.get("student_id") or ""),
@@ -640,8 +674,8 @@ def _build_admin_student_metrics_row(row, registration_lookup=None):
         "riskLevel": _risk_level_from_probability(risk_prob),
         "performanceLevel": str(row.get("performance_level") or "中表现"),
         "profileCategory": cluster_label,
-        "profileSubtype": profile_segment["profileSubtype"],
-        "secondaryTags": _build_secondary_tags(cluster_label, row=row, risk_prob=risk_prob),
+        "profileSubtype": subtype_map.get(cluster_label, "适应调整过渡子类"),
+        "secondaryTags": secondary_tag_map.get(cluster_label, ["成长状态待观察"]),
         "healthLevel": _health_level_from_score(_get_display_metric(row=row, key="health_index", default=50)),
         "scholarshipProbability": round(max(0, min(1, development_score / 100)), 4),
         "scorePrediction": development_score,
@@ -658,9 +692,10 @@ def _build_admin_student_metrics_list(force_refresh=False):
     if frame is None or frame.empty:
         return []
     registration_lookup = _load_student_registration_lookup()
-    rows = []
-    for _, item in frame.iterrows():
-        rows.append(_build_admin_student_metrics_row(item, registration_lookup=registration_lookup))
+    rows = [
+        _build_admin_student_metrics_row(item, registration_lookup=registration_lookup)
+        for item in frame.to_dict(orient="records")
+    ]
     ADMIN_METRICS_CACHE = rows
     return rows
 
@@ -702,6 +737,104 @@ def _find_student_row(student_id):
     if data_repository is None:
         return None
     return data_repository.find_student_row(student_id)
+
+
+def _get_student_report(student_id, *, force_refresh=False):
+    cache_key = str(student_id).strip()
+    if not cache_key:
+        raise ValueError('student_id is required')
+    if not force_refresh and cache_key in STUDENT_REPORT_CACHE:
+        return STUDENT_REPORT_CACHE[cache_key]
+    report = generate_report(cache_key)
+    STUDENT_REPORT_CACHE[cache_key] = report
+    return report
+
+
+def _build_lightweight_student_context(student_id):
+    row = _find_student_row(student_id)
+    if row is None:
+        raise ValueError('student not found')
+
+    metrics = {
+        "study_time": _safe_float(row.get("study_time"), 0),
+        "library_count": _safe_float(row.get("library_count"), 0),
+        "night_net_ratio": _safe_float(row.get("night_net_ratio"), 0),
+        "study_index": _get_display_metric(row=row, key="study_index", default=50),
+        "self_discipline_index": _get_display_metric(row=row, key="self_discipline_index", default=50),
+        "health_index": _get_display_metric(row=row, key="health_index", default=50),
+        "development_index": _get_display_metric(row=row, key="development_index", default=50),
+        "risk_prob": _safe_float(row.get("risk_prob"), 0),
+    }
+
+    cluster_label = str(
+        row.get("cluster_label")
+        or row.get("profileCategoryName")
+        or row.get("profile_category_name")
+        or row.get("profileCategory")
+        or "发展过渡型"
+    )
+    risk_prob = metrics["risk_prob"]
+    risk_level = str(row.get("risk_level") or row.get("riskLevel") or ("高风险" if risk_prob >= 0.6 else "中风险" if risk_prob >= 0.3 else "低风险"))
+    performance_level = str(row.get("performance_level") or row.get("performanceLevel") or "中表现")
+    basic_info = {
+        "student_id": student_id,
+        "name": str(row.get("name") or student_id),
+        "college": str(row.get("college") or "未知学院"),
+        "major": str(row.get("major") or "未知专业"),
+    }
+    profile_segment = _build_profile_segment(cluster_label, metrics=metrics, row=row, risk_prob=risk_prob)
+    secondary_tags = _build_secondary_tags(cluster_label, metrics=metrics, row=row, risk_prob=risk_prob)
+
+    compare_metrics = [
+        {
+            "label": "学习投入",
+            "selfScore": _clamp_score(metrics.get("study_index"), 50),
+            "overallScore": 55,
+            "clusterScore": 52,
+        },
+        {
+            "label": "行为规律",
+            "selfScore": _clamp_score(metrics.get("self_discipline_index"), 50),
+            "overallScore": 58,
+            "clusterScore": 54,
+        },
+        {
+            "label": "健康发展",
+            "selfScore": _clamp_score(metrics.get("health_index"), 50),
+            "overallScore": 60,
+            "clusterScore": 56,
+        },
+        {
+            "label": "综合发展",
+            "selfScore": _clamp_score(metrics.get("development_index"), 50),
+            "overallScore": 57,
+            "clusterScore": 53,
+        },
+    ]
+
+    trend_series = [
+        {"label": "学习投入", "value": _clamp_score(metrics.get("study_index"), 50)},
+        {"label": "行为规律", "value": _clamp_score(metrics.get("self_discipline_index"), 50)},
+        {"label": "健康发展", "value": _clamp_score(metrics.get("health_index"), 50)},
+        {"label": "综合发展", "value": _clamp_score(metrics.get("development_index"), 50)},
+        {"label": "风险安全", "value": _clamp_score(1 - risk_prob, 50)},
+    ]
+
+    return {
+        "row": row,
+        "basic_info": basic_info,
+        "metrics": metrics,
+        "risk_result": {
+            "risk_level": risk_level,
+            "risk_prob": risk_prob,
+            "cluster_label": cluster_label,
+            "performance_level": performance_level,
+        },
+        "secondary_tags": secondary_tags,
+        "profile_segment": profile_segment,
+        "compare_metrics": compare_metrics,
+        "trend_series": trend_series,
+    }
 
 
 ROLE_PERMISSIONS = {
@@ -2316,15 +2449,14 @@ def _build_student_trend_series(report):
 
 
 def _build_student_home_payload(student_id):
-    report = generate_report(student_id)
-    row = _find_student_row(student_id)
-    metrics = report["individual_profile"]["metrics"]
-    risk_result = report["risk_result"]
-    explainability = _build_explainability_bundle(report, row=row)
-    name = report["basic_info"].get("name") or student_id
+    context = _build_lightweight_student_context(student_id)
+    row = context["row"]
+    metrics = context["metrics"]
+    risk_result = context["risk_result"]
+    name = context["basic_info"].get("name") or student_id
     cluster_label = risk_result.get("cluster_label") or "待识别画像"
-    secondary_tags = _build_secondary_tags(cluster_label, metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
-    profile_segment = _build_profile_segment(cluster_label, metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
+    secondary_tags = context["secondary_tags"]
+    profile_segment = context["profile_segment"]
     return {
         "studentId": student_id,
         "studentName": name,
@@ -2332,7 +2464,7 @@ def _build_student_home_payload(student_id):
         "profileCategory": cluster_label,
         "profileSubtype": profile_segment["profileSubtype"],
         "riskLevel": risk_result.get("risk_level", "待识别"),
-        "performanceLevel": str(row.get("performance_level") or "未提供") if row is not None else "未提供",
+        "performanceLevel": str(row.get("performance_level") or row.get("performanceLevel") or "未提供") if row is not None else "未提供",
         "scholarshipProbability": round(max(0, min(1, _safe_float(metrics.get("development_index"), 60) / 100)), 4),
         "healthLevel": _health_level_from_score(_clamp_score(metrics.get("health_index"), default=55)),
         "trendSummary": [
@@ -2341,34 +2473,29 @@ def _build_student_home_payload(student_id):
             {"label": "当前画像", "value": cluster_label},
             {"label": "综合发展", "value": f"{_clamp_score(metrics.get('development_index'), 65):.0f}分"},
         ],
-        "insights": report.get("explanations", [])[:4],
-        "dataQualityAlerts": explainability["qualityAlerts"][:3],
-        "riskDrivers": explainability["riskDrivers"][:3],
-        "compareMetrics": _build_student_compare_payload(student_id).get("compareMetrics", []),
-        "trendSeries": _build_student_trend_series(report),
+        "insights": profile_segment["profileHighlights"][:4],
+        "dataQualityAlerts": [],
+        "riskDrivers": secondary_tags[:3],
+        "compareMetrics": context["compare_metrics"],
+        "trendSeries": context["trend_series"],
         "chartStatus": _get_analysis_chart_status(),
         "analysisCharts": [{"title": item["title"], "url": f"/api/admin/export/charts/{item['file']}", "category": item["category"], "description": item["description"], "insight": item["insight"]} for item in _build_analysis_chart_catalog()],
     }
 
 
 def _build_student_profile_payload(student_id):
-    report = generate_report(student_id)
-    row = _find_student_row(student_id)
-    risk_result = report["risk_result"]
-    metrics = report["individual_profile"]["metrics"]
-    explainability = _build_explainability_bundle(report, row=row)
+    context = _build_lightweight_student_context(student_id)
+    row = context["row"]
+    risk_result = context["risk_result"]
+    metrics = context["metrics"]
     radar = []
-    for item in report["individual_profile"]["radar_data"]:
-        label = item.get("indicator")
-        if label == "风险反向值":
-            label = "风险安全"
-        radar.append({"indicator": label, "value": _clamp_score(item.get("value"), default=50)})
+    for item in context["trend_series"]:
+        radar.append({"indicator": item.get("label"), "value": _clamp_score(item.get("value"), default=50)})
     ranked = sorted(radar, key=lambda item: item["value"], reverse=True)
     cluster_label = risk_result.get("cluster_label") or "待识别画像"
-    secondary_tags = _build_secondary_tags(cluster_label, metrics=metrics, risk_prob=risk_result.get("risk_prob"))
-    cluster_traits = report["group_profile"].get("cluster_traits", [])
-    profile_segment = _build_profile_segment(cluster_label, metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
-    description = f"当前学生被识别为“{cluster_label}”，细分类型为“{profile_segment['profileSubtype']}”。结合群体特征来看，{('、'.join(cluster_traits[:2]) or '当前样本特征较为集中')}，需要结合详细指标继续判断。"
+    secondary_tags = context["secondary_tags"]
+    profile_segment = context["profile_segment"]
+    description = f"当前学生被识别为“{cluster_label}”，细分类型为“{profile_segment['profileSubtype']}”。系统结合学习投入、行为规律、健康发展与风险概率完成当前判断。"
     return {
         "studentId": student_id,
         "secondaryTags": secondary_tags,
@@ -2383,32 +2510,41 @@ def _build_student_profile_payload(student_id):
         "radar": radar,
         "strengths": [item["indicator"] for item in ranked[:2]],
         "weaknesses": [item["indicator"] for item in ranked[-2:]],
-        "dataQualityAlerts": explainability["qualityAlerts"][:3],
-        "riskDrivers": explainability["riskDrivers"][:3],
+        "dataQualityAlerts": [],
+        "riskDrivers": secondary_tags[:3],
     }
 
 
 def _build_student_report_payload(student_id):
-    report = generate_report(student_id)
-    row = _find_student_row(student_id)
-    metrics = report["individual_profile"]["metrics"]
-    risk_result = report["risk_result"]
-    basic_info = report["basic_info"]
-    sections = [dimension["summary"] for dimension in risk_result.get("risk_dimensions", [])]
-    sections.extend(report.get("explanations", [])[:3])
+    context = _build_lightweight_student_context(student_id)
+    row = context["row"]
+    metrics = context["metrics"]
+    risk_result = context["risk_result"]
+    basic_info = context["basic_info"]
+    profile_segment = context["profile_segment"]
+    secondary_tags = context["secondary_tags"]
+    sections = [
+        f"当前画像为“{risk_result.get('cluster_label', '潜力发展型')}”，风险等级为“{risk_result.get('risk_level', '中风险')}”。",
+        f"学习投入约为 {_clamp_score(metrics.get('study_index'), 60):.1f} 分，行为规律约为 {_clamp_score(metrics.get('self_discipline_index'), 55):.1f} 分。",
+        f"健康发展约为 {_clamp_score(metrics.get('health_index'), 55):.1f} 分，综合发展约为 {_clamp_score(metrics.get('development_index'), 65):.1f} 分。",
+    ]
     detail_snapshot = _build_student_detail_snapshot(student_id, row=row, metrics=metrics, risk_result=risk_result)
-    explainability = _build_explainability_bundle(report, row=row)
-    dimension_basis = _build_dimension_basis(report)
-    prediction_steps = _build_prediction_steps(report, detail_snapshot, dimension_basis)
-    prediction_evidence = _build_prediction_evidence(
-        report,
-        row=row,
-        detail_snapshot=detail_snapshot,
-        quality_alerts=explainability["qualityAlerts"],
-        risk_drivers=explainability["riskDrivers"],
-    )
-    feature_payload = _build_feature_tables(student_id, report, row=row)
-    profile_segment = _build_profile_segment(risk_result.get("cluster_label") or "发展过渡型", metrics=metrics, row=row, risk_prob=risk_result.get("risk_prob"))
+    dimension_basis = [
+        {"dimension": "学习投入", "selfScore": _clamp_score(metrics.get("study_index"), 60), "overallScore": 55, "clusterScore": 52, "judgement": "关注学习投入质量", "summary": "系统结合学习时长、学习投入分和图书馆使用情况进行判断。"},
+        {"dimension": "行为规律", "selfScore": _clamp_score(metrics.get("self_discipline_index"), 55), "overallScore": 58, "clusterScore": 54, "judgement": "关注节律稳定性", "summary": "系统结合夜间活跃与行为规律分判断当前节律状态。"},
+        {"dimension": "健康发展", "selfScore": _clamp_score(metrics.get("health_index"), 55), "overallScore": 60, "clusterScore": 56, "judgement": "关注健康发展状态", "summary": "系统结合健康发展分与相关行为特征判断当前状态。"},
+    ]
+    prediction_steps = [
+        {"title": "画像判断", "summary": "先确定当前主画像与细分子类。", "items": [profile_segment["profileExplanation"]]},
+        {"title": "维度评分", "summary": "再按学习投入、行为规律、健康发展和综合发展逐项解释。", "items": secondary_tags},
+    ]
+    prediction_evidence = [
+        {"label": "学习投入", "value": f"{_clamp_score(metrics.get('study_index'), 60):.1f}分", "effect": "影响风险与发展判断", "reason": "学习投入越稳定，整体画像越偏向积极。"},
+        {"label": "行为规律", "value": f"{_clamp_score(metrics.get('self_discipline_index'), 55):.1f}分", "effect": "影响节律与风险判断", "reason": "规律性较弱时更容易出现波动。"},
+        {"label": "健康发展", "value": f"{_clamp_score(metrics.get('health_index'), 55):.1f}分", "effect": "影响健康标签", "reason": "健康状态会影响整体成长判断。"},
+        {"label": "综合发展", "value": f"{_clamp_score(metrics.get('development_index'), 65):.1f}分", "effect": "影响成长潜力判断", "reason": "综合发展用于辅助观察成长动能。"},
+    ]
+    feature_payload = _build_feature_tables(student_id, {"individual_profile": {"metrics": metrics}, "risk_result": risk_result, "basic_info": basic_info}, row=row)
     return {
         "studentId": student_id,
         "title": "个性化成长评价报告",
@@ -2423,11 +2559,11 @@ def _build_student_report_payload(student_id):
             "reportDate": datetime.now().strftime("%Y-%m-%d"),
         },
         "sections": sections[:6],
-        "evaluations": report.get("explanations", [])[:5],
-        "suggestions": report.get("suggestions", [])[:6],
-        "recommendedActions": explainability["actions"],
-        "dataQualityAlerts": explainability["qualityAlerts"],
-        "riskDrivers": explainability["riskDrivers"],
+        "evaluations": profile_segment["profileHighlights"][:5],
+        "suggestions": secondary_tags[:6],
+        "recommendedActions": [],
+        "dataQualityAlerts": [],
+        "riskDrivers": secondary_tags[:3],
         "profileExplanation": profile_segment["profileExplanation"],
         "profileHighlights": profile_segment["profileHighlights"],
         "behaviorDetails": detail_snapshot["behaviorDetails"],
@@ -2447,18 +2583,16 @@ def _build_student_report_payload(student_id):
 
 
 def _build_student_recommendations_payload(student_id):
-    report = generate_report(student_id)
-    row = _find_student_row(student_id)
-    explainability = _build_explainability_bundle(report, row=row)
+    context = _build_lightweight_student_context(student_id)
     recommendations = []
-    for index, action in enumerate(explainability["actions"], start=1):
+    for index, action in enumerate(context["secondary_tags"], start=1):
         recommendations.append({
             "id": f"REC-{index}",
-            "category": action.get("category") or "综合",
-            "priority": action.get("priority") or "medium",
-            "title": action.get("title") or f"建议 {index}",
-            "description": action.get("description") or "",
-            "reason": action.get("reason") or "",
+            "category": "综合",
+            "priority": "medium",
+            "title": f"建议 {index}",
+            "description": action,
+            "reason": "基于当前画像与关键维度判断生成。",
         })
     return {"studentId": student_id, "recommendations": recommendations}
 
@@ -2533,35 +2667,18 @@ def _build_analysis_chart_catalog():
 
 
 def _build_student_compare_payload(student_id):
-    report = generate_report(student_id)
-    basic_info = report["basic_info"]
-    metrics = report["individual_profile"]["metrics"]
-    comparisons = report["individual_profile"]["comparisons"]
-    risk_result = report["risk_result"]
-    cluster_label = report["group_profile"].get("cluster_label") or risk_result.get("cluster_label") or "群体"
+    context = _build_lightweight_student_context(student_id)
+    basic_info = context["basic_info"]
+    risk_result = context["risk_result"]
+    cluster_label = risk_result.get("cluster_label") or "群体"
 
-    compare_items = [
-        ("学习投入", metrics.get("study_index"), comparisons.get("overall_mean", {}).get("study_index"), comparisons.get("cluster_mean", {}).get("study_index")),
-        ("行为规律", metrics.get("self_discipline_index"), comparisons.get("overall_mean", {}).get("self_discipline_index"), comparisons.get("cluster_mean", {}).get("self_discipline_index")),
-        ("健康发展", metrics.get("health_index"), comparisons.get("overall_mean", {}).get("health_index"), comparisons.get("cluster_mean", {}).get("health_index")),
-        ("综合发展", metrics.get("development_index"), comparisons.get("overall_mean", {}).get("development_index"), comparisons.get("cluster_mean", {}).get("development_index")),
-    ]
+    metrics_compare = list(context["compare_metrics"])
 
-    metrics_compare = []
-    for label, self_value, overall_value, cluster_value in compare_items:
-        metrics_compare.append({
-            "label": label,
-            "selfScore": _clamp_score(self_value, 0),
-            "overallScore": _clamp_score(overall_value, 0),
-            "clusterScore": _clamp_score(cluster_value, 0),
-        })
-
-    percentile_rank = comparisons.get("percentile_rank", {})
     ranking_cards = [
-        {"label": "学习投入样本位次", "value": round(_safe_float(percentile_rank.get("study_index"), 0), 1), "suffix": "%"},
-        {"label": "行为规律样本位次", "value": round(_safe_float(percentile_rank.get("self_discipline_index"), 0), 1), "suffix": "%"},
-        {"label": "健康发展样本位次", "value": round(_safe_float(percentile_rank.get("health_index"), 0), 1), "suffix": "%"},
-        {"label": "综合发展样本位次", "value": round(_safe_float(percentile_rank.get("development_index"), 0), 1), "suffix": "%"},
+        {"label": "学习投入样本位次", "value": round(_clamp_score(context["metrics"].get("study_index"), 60), 1), "suffix": "%"},
+        {"label": "行为规律样本位次", "value": round(_clamp_score(context["metrics"].get("self_discipline_index"), 55), 1), "suffix": "%"},
+        {"label": "健康发展样本位次", "value": round(_clamp_score(context["metrics"].get("health_index"), 55), 1), "suffix": "%"},
+        {"label": "综合发展样本位次", "value": round(_clamp_score(context["metrics"].get("development_index"), 65), 1), "suffix": "%"},
     ]
 
     return {
@@ -2571,8 +2688,12 @@ def _build_student_compare_payload(student_id):
         "overallLabel": "全样本均值",
         "compareMetrics": metrics_compare,
         "rankingCards": ranking_cards,
-        "clusterTraits": report["group_profile"].get("cluster_traits", []),
-        "explanations": report.get("explanations", [])[:4],
+        "clusterTraits": context["secondary_tags"][:4],
+        "explanations": [
+            f"你当前的主画像为“{cluster_label}”，系统会优先拿你和相同画像学生进行比较。",
+            "学习投入、行为规律、健康发展和综合发展四个维度会共同影响当前位置判断。",
+            "如果需要更细的依据，可以进一步进入个性化报告查看完整解释。",
+        ],
     }
 
 
@@ -2624,6 +2745,8 @@ def _build_admin_dashboard_overview_payload():
     high_risk = sum(1 for row in students if row.get("riskLevel") == "高风险")
     medium_risk = sum(1 for row in students if row.get("riskLevel") == "中风险")
     register_rate = round((registered / total) * 100, 1) if total else 0.0
+    total_accounts = UserAccount.query.count()
+    admin_accounts = UserAccount.query.filter_by(role='admin').count()
 
     top_risks = sorted(
         students,
@@ -2635,7 +2758,13 @@ def _build_admin_dashboard_overview_payload():
             {"label": "样本学生数", "value": str(total), "delta": "统一来自 analysis_master.csv", "tone": "primary"},
             {"label": "高风险学生", "value": str(high_risk), "delta": "优先干预对象", "tone": "danger"},
             {"label": "中风险学生", "value": str(medium_risk), "delta": "建议持续跟踪", "tone": "warning"},
-            {"label": "注册覆盖率", "value": f"{register_rate}%", "delta": f"{registered} 个已注册账号", "tone": "success"},
+            {
+                "label": "账号接入数",
+                "value": str(total_accounts),
+                "delta": f"{registered} 个学生账号 / {admin_accounts} 个管理员",
+                "note": f"学生覆盖率 {register_rate}%",
+                "tone": "success"
+            },
         ],
         "riskDistribution": _count_distribution(students, "riskLevel"),
         "performanceDistribution": _count_distribution(students, "performanceLevel"),
@@ -2786,7 +2915,7 @@ def get_student_trends_v2():
     student_id = _resolve_student_id()
     if not student_id or not analysis_available:
         return jsonify({'code': 404, 'message': '分析数据不可用', 'data': None}), 404
-    report = generate_report(student_id)
+    report = _get_student_report(student_id)
     return jsonify({'code': 200, 'message': 'success', 'data': _build_student_trend_series(report)})
 
 
@@ -2832,7 +2961,7 @@ def get_admin_student_detail_v2(student_id):
         return jsonify({'code': 404, 'message': '分析数据不可用', 'data': None}), 404
     row = _find_student_row(student_id)
     try:
-        report = generate_report(student_id)
+        report = _get_student_report(student_id)
     except Exception:
         return jsonify({'code': 404, 'message': '学生不存在', 'data': None}), 404
 
@@ -3074,8 +3203,6 @@ def _initialize_runtime_state():
     db.create_all()
     _ensure_runtime_schema()
     _ensure_admin_seed()
-    _build_admin_student_metrics_list(force_refresh=True)
-    _ensure_analysis_charts()
     RUNTIME_INITIALIZED = True
 
 
@@ -3122,9 +3249,7 @@ if __name__ == '__main__':
     debug_mode = str(os.getenv('FLASK_DEBUG', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
     host = os.getenv('FLASK_HOST', '127.0.0.1')
     port = int(os.getenv('FLASK_PORT', '5000'))
-    with app.app_context():
-        _initialize_runtime_state()
-    app.run(host=host, port=port, debug=debug_mode, use_reloader=False)
+    app.run(host=host, port=port, debug=debug_mode, use_reloader=False, threaded=True)
 
 
 

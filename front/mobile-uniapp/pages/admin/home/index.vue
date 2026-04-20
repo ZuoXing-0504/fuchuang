@@ -1,89 +1,104 @@
 <template>
-  <view class="page-wrap">
+  <view class="page-wrap admin-page">
     <view v-if="loading" class="status-card loading">
-      <view class="status-title">加载中</view>
-      <view class="helper-text">正在读取管理员概览...</view>
+      <view class="status-title">正在加载</view>
+      <view class="helper-text">正在同步管理员总览数据...</view>
     </view>
 
     <view v-else-if="error" class="status-card error">
-      <view class="status-title">管理首页加载失败</view>
+      <view class="status-title">加载失败</view>
       <view class="helper-text">{{ error }}</view>
       <button class="secondary-btn" @click="loadData">重新加载</button>
     </view>
 
     <template v-else-if="data">
       <view class="hero-card">
-        <view class="hero-eyebrow">Management Portal</view>
-        <view class="card-title">学生行为分析后台</view>
-        <view class="helper-copy">移动端保留管理员最常用的链路：概览 -> 风险名单 -> 单学生详情 -> 完整报告。</view>
+        <view class="hero-eyebrow">管理员总览</view>
+        <view class="card-title">移动后台首页</view>
+        <view class="hero-copy">这里汇总当前学生群体的全局情况。你可以先看整体指标，再进入风险名单、院系对比、干预工作台、预测模块和分析成果。</view>
       </view>
 
       <view class="metric-grid">
-        <view v-for="item in data.kpis" :key="item.label" class="metric-card">
+        <view v-for="item in kpis" :key="item.label" class="metric-card">
           <view class="metric-label">{{ item.label }}</view>
           <view class="metric-value">{{ item.value }}</view>
-          <view class="muted">{{ item.delta }}</view>
+          <view class="muted">{{ item.delta || item.note }}</view>
         </view>
       </view>
 
       <view class="panel-card">
-        <view class="card-title">数据质量摘要</view>
-        <view class="summary-grid">
-          <view class="metric-card">
-            <view class="metric-label">字段数</view>
-            <view class="metric-value">{{ data.dataQualitySummary.fieldCount || 0 }}</view>
+        <view class="card-title">模块入口</view>
+        <view class="shortcut-grid">
+          <view class="shortcut-card" @click="openPage('/pages/admin/warnings/index')">
+            <view class="shortcut-title">风险名单</view>
+            <view class="muted">查看重点学生，进入单学生详情和完整报告</view>
           </view>
-          <view class="metric-card">
-            <view class="metric-label">长尾字段</view>
-            <view class="metric-value">{{ data.dataQualitySummary.longTailFields || 0 }}</view>
+          <view class="shortcut-card" @click="openPage('/pages/admin/profiles/index')">
+            <view class="shortcut-title">院系对比</view>
+            <view class="muted">查看学院风险率、主导画像和细分解释</view>
           </view>
-          <view class="metric-card">
-            <view class="metric-label">零膨胀字段</view>
-            <view class="metric-value">{{ data.dataQualitySummary.zeroInflatedFields || 0 }}</view>
+          <view class="shortcut-card" @click="openPage('/pages/admin/tasks/index')">
+            <view class="shortcut-title">干预工作台</view>
+            <view class="muted">查看任务历史并发起批量预测</view>
           </view>
-          <view class="metric-card">
-            <view class="metric-label">高缺失字段</view>
-            <view class="metric-value">{{ data.dataQualitySummary.missingHeavyFields || 0 }}</view>
+          <view class="shortcut-card" @click="openPage('/pages/admin/models/index')">
+            <view class="shortcut-title">预测模块</view>
+            <view class="muted">查看模型概览和单学生预测结果</view>
+          </view>
+          <view class="shortcut-card" @click="openPage('/pages/admin/analysis/index')">
+            <view class="shortcut-title">分析成果</view>
+            <view class="muted">查看全样本图表和图表解释</view>
+          </view>
+          <view class="shortcut-card" @click="openPage('/pages/admin/settings/index')">
+            <view class="shortcut-title">设置中心</view>
+            <view class="muted">核对账号、接口地址和当前会话</view>
           </view>
         </view>
       </view>
 
       <view class="panel-card">
         <view class="card-title">重点风险学生</view>
-        <view v-for="item in data.topRisks.slice(0, 5)" :key="item.studentId" class="student-card" @click="openDetail(item.studentId)">
-          <view>
-            <view class="student-name">{{ item.name || item.studentId }}</view>
-            <view class="muted">{{ item.studentId }} · {{ item.college }}</view>
-            <view class="chip-row compact">
-              <view class="tag-chip">{{ item.riskLevel }}</view>
-              <view class="tag-chip">{{ item.profileCategory }}</view>
-            </view>
+        <view
+          v-for="item in topRisks"
+          :key="item.studentId"
+          class="warning-card"
+          @click="openDetail(item.studentId)"
+        >
+          <view class="row-head">
+            <view class="row-title">{{ item.studentId }}</view>
+            <view class="row-score">{{ item.riskLevel }}</view>
           </view>
-          <view class="student-score">{{ item.scorePrediction.toFixed(1) }}</view>
+          <view class="muted">{{ item.college }} · {{ item.major }}</view>
+          <view class="chip-row top-gap">
+            <view class="tag-chip">{{ item.profileCategory }}</view>
+            <view v-if="item.profileSubtype" class="tag-chip">{{ item.profileSubtype }}</view>
+            <view class="tag-chip">综合预测 {{ Number(item.scorePrediction || 0).toFixed(1) }}</view>
+          </view>
         </view>
-        <button class="primary-btn top-space" @click="goWarnings">查看完整风险名单</button>
       </view>
-
-      <button class="secondary-btn" @click="handleLogout">退出登录</button>
     </template>
+
+    <view class="page-bottom-space"></view>
+    <AdminBottomNav current="home" />
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { getDashboardOverview } from '../../../api/admin';
-import { logout } from '../../../api/auth';
 import { ensureRole } from '../../../common/session';
+import AdminBottomNav from '../../../components/AdminBottomNav.vue';
 
 const loading = ref(true);
 const error = ref('');
 const data = ref(null);
 
+const kpis = computed(() => (data.value && data.value.kpis) || []);
+const topRisks = computed(() => ((data.value && data.value.topRisks) || []).slice(0, 5));
+
 onShow(() => {
-  if (!ensureRole('admin')) {
-    return;
-  }
+  if (!ensureRole('admin')) return;
   loadData();
 });
 
@@ -93,76 +108,87 @@ async function loadData() {
   try {
     data.value = await getDashboardOverview();
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '管理员首页加载失败';
+    error.value = err instanceof Error ? err.message : '管理员总览加载失败';
   } finally {
     loading.value = false;
   }
 }
 
+function openPage(url) {
+  uni.redirectTo({ url });
+}
+
 function openDetail(studentId) {
-  uni.navigateTo({ url: `/pages/admin/student-detail/index?studentId=${studentId}` });
-}
-
-function goWarnings() {
-  uni.navigateTo({ url: '/pages/admin/warnings/index' });
-}
-
-function handleLogout() {
-  logout();
+  uni.navigateTo({ url: `/pages/admin/student-detail/index?studentId=${encodeURIComponent(studentId)}` });
 }
 </script>
 
 <style scoped>
-.hero-eyebrow,
-.helper-copy {
-  font-size: 22rpx;
+.admin-page {
+  padding-bottom: 0;
 }
 
-.helper-copy {
+.hero-eyebrow {
+  font-size: 22rpx;
+  font-weight: 700;
+  opacity: 0.9;
+  margin-bottom: 8rpx;
+}
+
+.hero-copy {
+  font-size: 24rpx;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.92);
 }
 
-.summary-grid {
+.shortcut-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
 }
 
-.student-card {
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
+.shortcut-card {
+  padding: 22rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 2rpx solid rgba(148, 163, 184, 0.12);
 }
 
-.student-card:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.student-name {
+.shortcut-title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #1a2e1f;
-  margin-bottom: 8rpx;
+  color: #0f172a;
+  margin-bottom: 10rpx;
 }
 
-.chip-row.compact {
-  gap: 8rpx;
+.warning-card {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #e8eef7;
+}
+
+.warning-card:last-child {
+  border-bottom: none;
+}
+
+.row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.row-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.row-score {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #c2410c;
+}
+
+.top-gap {
   margin-top: 10rpx;
-}
-
-.student-score {
-  font-size: 30rpx;
-  font-weight: 900;
-  color: #2d7a4f;
-  flex-shrink: 0;
-}
-
-.top-space {
-  margin-top: 20rpx;
 }
 </style>
