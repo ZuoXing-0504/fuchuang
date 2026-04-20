@@ -99,11 +99,11 @@ function openHelp(title: string, content: string) {
   <section class="page-shell settings-page">
     <div class="hero panel-card">
       <div class="hero-copy">
-        <div class="hero-eyebrow">Student Settings Center</div>
+        <div class="hero-eyebrow">知行雷达学生端</div>
         <h1 class="hero-title">设置中心</h1>
         <p class="hero-subtitle">这里统一管理账号安全、提醒方式、报告导出、展示偏好和帮助信息，让日常使用更顺手。</p>
       </div>
-      <div class="hero-badge">Account Preferences</div>
+      <div class="hero-badge">账号偏好设置</div>
     </div>
 
     <div class="status-grid">

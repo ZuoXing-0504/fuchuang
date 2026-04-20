@@ -1,7 +1,7 @@
 <template>
   <view class="page-wrap">
     <view class="hero-card">
-      <view class="hero-eyebrow">Student Settings Center</view>
+      <view class="hero-eyebrow">知行雷达学生端</view>
       <view class="card-title">设置中心</view>
       <view class="hero-copy">这里统一管理账号安全、接口地址、报告导出、展示偏好和帮助信息，让手机端和 web 端保持一致的使用逻辑。</view>
     </view>

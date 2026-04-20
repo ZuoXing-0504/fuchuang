@@ -9,13 +9,7 @@
         @click="go(item)"
       >
         <view class="admin-nav-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              v-for="segment in navIconPaths[item.icon]"
-              :key="segment"
-              :d="segment"
-            />
-          </svg>
+          <text class="admin-nav-glyph">{{ item.glyph }}</text>
         </view>
         <view class="admin-nav-label">{{ item.label }}</view>
       </view>
@@ -32,20 +26,12 @@ const props = defineProps({
 });
 
 const items = [
-  { key: 'home', label: '总览', icon: 'home', url: '/pages/admin/home/index' },
-  { key: 'warnings', label: '风险', icon: 'warning', url: '/pages/admin/warnings/index' },
-  { key: 'profiles', label: '对比', icon: 'compare', url: '/pages/admin/profiles/index' },
-  { key: 'models', label: '预测', icon: 'models', url: '/pages/admin/models/index' },
-  { key: 'settings', label: '设置', icon: 'settings', url: '/pages/admin/settings/index' }
+  { key: 'home', label: '总览', glyph: '⌂', url: '/pages/admin/home/index' },
+  { key: 'warnings', label: '风险', glyph: '!', url: '/pages/admin/warnings/index' },
+  { key: 'profiles', label: '对比', glyph: '▥', url: '/pages/admin/profiles/index' },
+  { key: 'models', label: '预测', glyph: '✦', url: '/pages/admin/models/index' },
+  { key: 'settings', label: '设置', glyph: '⚙', url: '/pages/admin/settings/index' }
 ];
-
-const navIconPaths = {
-  home: ['M4 10.5 12 4l8 6.5', 'M6.5 9.5V20h11V9.5', 'M10 20v-5h4v5'],
-  warning: ['M12 4 20 18H4L12 4Z', 'M12 9v4', 'M12 16h.01'],
-  compare: ['M6 6h5v12H6z', 'M13 9h5v9h-5z'],
-  models: ['M5 17l4-4 3 3 7-7', 'M16 9h3v3'],
-  settings: ['M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z', 'M12 3v2.2', 'M12 18.8V21', 'M4.9 4.9l1.6 1.6', 'M17.5 17.5l1.6 1.6', 'M3 12h2.2', 'M18.8 12H21', 'M4.9 19.1l1.6-1.6', 'M17.5 6.5l1.6-1.6']
-};
 
 function go(item) {
   if (props.current === item.key) {
@@ -101,13 +87,10 @@ function go(item) {
   background: #eff6ff;
 }
 
-.admin-nav-icon svg {
-  width: 30rpx;
-  height: 30rpx;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.admin-nav-glyph {
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 800;
 }
 
 .admin-nav-item.active .admin-nav-icon {

@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import BrandRadar from '../components/BrandRadar.vue';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -53,17 +54,10 @@ function handleLogout() {
   <div class="app-shell">
     <aside class="side-nav">
       <div class="brand-block">
-        <div class="brand-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none">
-            <rect x="6" y="10" width="36" height="28" rx="12" />
-            <path d="M15 30V20l9-6 9 6v10" />
-            <path d="M20 24h8" />
-            <path d="M24 19.5V28" />
-          </svg>
-        </div>
-        <div>
-          <div class="brand-title">校园行为管理</div>
-          <div class="brand-subtitle">Admin Console</div>
+        <BrandRadar compact />
+        <div class="brand-copy">
+          <div class="brand-title">知行雷达</div>
+          <div class="brand-subtitle">校园行为洞察后台</div>
         </div>
       </div>
 
@@ -95,7 +89,7 @@ function handleLogout() {
       <header class="app-header">
         <div>
           <div class="header-title">{{ activeNav }}</div>
-          <div class="header-subtitle">按入口查看名单、对比、详情和报告。</div>
+          <div class="header-subtitle">从总览、名单、对比到完整报告，统一查看学生行为洞察结果。</div>
         </div>
 
         <div class="header-actions">
@@ -139,24 +133,9 @@ function handleLogout() {
   padding: 6px 4px 10px;
 }
 
-.brand-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #1677ff, #5aa9ff);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.brand-icon svg {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.brand-copy {
+  display: flex;
+  flex-direction: column;
 }
 
 .brand-title {

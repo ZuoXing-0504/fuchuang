@@ -151,7 +151,7 @@ function subtypeExplanation(subtype?: string) {
     <div class="hero panel-card">
       <div class="hero-grid"></div>
       <div class="hero-copy">
-        <div class="hero-eyebrow">Organization Comparison</div>
+        <div class="hero-eyebrow">知行雷达对比中心</div>
         <h1 class="hero-title">学院 / 专业对比</h1>
         <p class="hero-subtitle">按学院和专业查看风险比例、注册覆盖率、主导画像和主导细分，并可继续进入具体学生名单。</p>
         <p class="hero-note">提示：高风险率反映该分组里高风险学生占比，主导画像反映人数最多的画像类别，两者不是同一个口径，因此可能同时出现“高风险率较高”与“主导画像偏稳健”的情况。</p>

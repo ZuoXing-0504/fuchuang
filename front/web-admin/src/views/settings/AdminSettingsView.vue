@@ -94,11 +94,11 @@ function openHelp(title: string, content: string) {
   <section class="page-shell settings-page">
     <div class="hero panel-card">
       <div class="hero-copy">
-        <div class="hero-eyebrow">Admin Settings Center</div>
+        <div class="hero-eyebrow">知行雷达管理端</div>
         <h1 class="hero-title">设置中心</h1>
         <p class="hero-subtitle">这里统一管理账号安全、通知提醒、数据权限、报告导出、分析展示和系统状态，让日常使用更加顺手。</p>
       </div>
-      <div class="hero-badge">System Preferences</div>
+      <div class="hero-badge">后台偏好设置</div>
     </div>
 
     <div class="status-grid">

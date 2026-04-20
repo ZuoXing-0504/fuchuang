@@ -176,8 +176,8 @@ function jumpToEntry(route: string) {
   <section class="page-shell dashboard-page">
     <div class="hero panel-card">
       <div class="hero-main">
-        <div class="hero-eyebrow">首页</div>
-        <h1 class="hero-title">首页</h1>
+        <div class="hero-eyebrow">知行雷达</div>
+        <h1 class="hero-title">总览首页</h1>
         <p class="hero-subtitle">这里汇总了当前学生群体的整体情况。你可以先看全局概况，再进入风险名单、院系对比、干预工作台和分析成果等模块。</p>
       </div>
       <div class="hero-actions">

@@ -37,6 +37,18 @@ function normalizeProbability(value) {
   return parsed > 1 ? Number((parsed / 100).toFixed(4)) : parsed;
 }
 
+function normalizeRegistrationStatus(status, registeredUsername = '') {
+  const raw = normalizeString(status, '');
+  const normalized = raw.replace(/\s+/g, '').toLowerCase();
+  if (raw.includes('已注册') || normalized.includes('registered')) {
+    return '已注册';
+  }
+  if (raw.includes('未注册') || normalized.includes('unregistered')) {
+    return '未注册';
+  }
+  return registeredUsername ? '已注册' : '未注册';
+}
+
 function getString(row, keys, fallback = '') {
   for (const key of keys) {
     if (row && Object.prototype.hasOwnProperty.call(row, key)) {
@@ -545,6 +557,7 @@ function adaptCurrentUser(payload) {
 
 function adaptStudentMetrics(row = {}) {
   const riskLabel = getNumber(row, ['riskLabel', 'risk_label'], 0);
+  const registeredUsername = getString(row, ['registeredUsername', 'username'], '');
   return {
     studentId: getString(row, ['studentId', 'student_id'], 'unknown'),
     name: getString(row, ['name', 'studentName'], '未知学生'),
@@ -561,9 +574,9 @@ function adaptStudentMetrics(row = {}) {
     healthLevel: getString(row, ['healthLevel', 'health_level'], '中'),
     scholarshipProbability: normalizeProbability(getNumber(row, ['scholarshipProbability', 'scholarship_probability'], 0)),
     scorePrediction: getNumber(row, ['scorePrediction', 'score_prediction'], 0),
-    registrationStatus: getString(row, ['registrationStatus'], '未注册'),
+    registrationStatus: normalizeRegistrationStatus(getString(row, ['registrationStatus', 'registration_status'], ''), registeredUsername),
     secondaryTags: normalizeStringArray(row.secondaryTags || row.behaviorTags || row.tags),
-    registeredUsername: getString(row, ['registeredUsername', 'username'], '')
+    registeredUsername
   };
 }
 

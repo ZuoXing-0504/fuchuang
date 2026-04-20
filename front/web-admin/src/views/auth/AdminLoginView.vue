@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import BrandRadar from '../../components/BrandRadar.vue';
 import { useAuthStore } from '../../stores/auth';
 
 const router = useRouter();
@@ -28,14 +29,16 @@ async function handleLogin() {
     <section class="brand-panel">
       <div class="brand-grid"></div>
       <div class="brand-copy">
-        <div class="brand-mark">AC</div>
-        <div class="brand-eyebrow">Admin Intelligence Console</div>
-        <h1 class="brand-title">学生行为分析后台</h1>
-        <p class="brand-subtitle">面向学校与学院管理视角的风险预警、群体对比、成果展厅与干预工作台。</p>
+        <div class="brand-mark-wrap">
+          <BrandRadar />
+        </div>
+        <div class="brand-eyebrow">知行雷达管理后台</div>
+        <h1 class="brand-title">知行雷达</h1>
+        <p class="brand-subtitle">面向学校与学院管理视角的风险预警、群体对比、完整报告、分析成果与干预工作台。</p>
         <div class="brand-points">
-          <div class="point-item">全样本行为分析成果与可视化叙事</div>
-          <div class="point-item">院系风险对比、学生检索与重点名单</div>
-          <div class="point-item">基于真实名单联动学生详情与干预建议</div>
+          <div class="point-item">统一查看全样本行为分析成果与图表解释</div>
+          <div class="point-item">按院系、风险等级和画像细分定位重点学生</div>
+          <div class="point-item">从风险名单直达学生详情、完整报告与干预建议</div>
         </div>
       </div>
     </section>
@@ -43,9 +46,9 @@ async function handleLogin() {
     <section class="form-panel">
       <div class="form-shell panel-card">
         <div class="form-head">
-          <div class="form-kicker">Management Portal</div>
-          <h2 class="form-title">管理员入口</h2>
-          <p class="form-desc">登录管理后台查看全样本分析、风险名单、院系对比和干预工作台。</p>
+          <div class="form-kicker">知行雷达后台</div>
+          <h2 class="form-title">管理员登录</h2>
+          <p class="form-desc">登录后可查看总览、风险名单、院系对比、预测模块、分析成果和完整报告。</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
@@ -109,16 +112,12 @@ async function handleLogin() {
   max-width: 560px;
 }
 
-.brand-mark {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
+.brand-mark-wrap {
+  display: inline-flex;
+  padding: 8px;
+  border-radius: 26px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   margin-bottom: 28px;
 }
 
@@ -126,7 +125,6 @@ async function handleLogin() {
 .form-kicker {
   font-size: 12px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
 }
 
 .brand-eyebrow {

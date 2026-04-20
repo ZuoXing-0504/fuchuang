@@ -1,23 +1,23 @@
 {
   "pages": [
-    { "path": "pages/login/index", "style": { "navigationBarTitleText": "Login" } },
-    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "Admin Home" } },
-    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "Warnings" } },
-    { "path": "pages/admin/profiles/index", "style": { "navigationBarTitleText": "Profiles" } },
-    { "path": "pages/admin/tasks/index", "style": { "navigationBarTitleText": "Tasks" } },
-    { "path": "pages/admin/models/index", "style": { "navigationBarTitleText": "Models" } },
-    { "path": "pages/admin/analysis/index", "style": { "navigationBarTitleText": "Analysis" } },
-    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "Student Detail" } },
-    { "path": "pages/admin/student-report/index", "style": { "navigationBarTitleText": "Student Report" } },
-    { "path": "pages/admin/settings/index", "style": { "navigationBarTitleText": "Settings" } },
-    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "Home" } },
-    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "Profile" } },
-    { "path": "pages/student/predict/index", "style": { "navigationBarTitleText": "Predict" } },
-    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "Report" } },
-    { "path": "pages/student/settings/index", "style": { "navigationBarTitleText": "Settings" } },
-    { "path": "pages/student/compare/index", "style": { "navigationBarTitleText": "Compare" } },
-    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "Trend" } },
-    { "path": "pages/student/analysis/index", "style": { "navigationBarTitleText": "Analysis" } }
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "知行雷达" } },
+    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "管理总览" } },
+    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "风险名单" } },
+    { "path": "pages/admin/profiles/index", "style": { "navigationBarTitleText": "院系对比" } },
+    { "path": "pages/admin/tasks/index", "style": { "navigationBarTitleText": "干预工作台" } },
+    { "path": "pages/admin/models/index", "style": { "navigationBarTitleText": "预测模块" } },
+    { "path": "pages/admin/analysis/index", "style": { "navigationBarTitleText": "分析成果" } },
+    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "学生详情" } },
+    { "path": "pages/admin/student-report/index", "style": { "navigationBarTitleText": "完整报告" } },
+    { "path": "pages/admin/settings/index", "style": { "navigationBarTitleText": "设置中心" } },
+    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "首页" } },
+    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "成长画像" } },
+    { "path": "pages/student/predict/index", "style": { "navigationBarTitleText": "在线预测" } },
+    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "个性化报告" } },
+    { "path": "pages/student/settings/index", "style": { "navigationBarTitleText": "设置中心" } },
+    { "path": "pages/student/compare/index", "style": { "navigationBarTitleText": "群体对比" } },
+    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "趋势分析" } },
+    { "path": "pages/student/analysis/index", "style": { "navigationBarTitleText": "全样本分析" } }
   ],
   "tabBar": {
     "color": "#64748b",
@@ -25,11 +25,11 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
-      { "pagePath": "pages/student/home/index", "text": "Home" },
-      { "pagePath": "pages/student/profile/index", "text": "Profile" },
-      { "pagePath": "pages/student/predict/index", "text": "Predict" },
-      { "pagePath": "pages/student/report/index", "text": "Report" },
-      { "pagePath": "pages/student/settings/index", "text": "Settings" }
+      { "pagePath": "pages/student/home/index", "text": "首页" },
+      { "pagePath": "pages/student/profile/index", "text": "画像" },
+      { "pagePath": "pages/student/predict/index", "text": "预测" },
+      { "pagePath": "pages/student/report/index", "text": "报告" },
+      { "pagePath": "pages/student/settings/index", "text": "设置" }
     ]
   },
   "globalStyle": {

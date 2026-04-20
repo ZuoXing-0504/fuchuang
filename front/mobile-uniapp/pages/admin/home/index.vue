@@ -13,8 +13,13 @@
 
     <template v-else-if="data">
       <view class="hero-card">
-        <view class="hero-eyebrow">管理员总览</view>
-        <view class="card-title">移动后台首页</view>
+        <view class="hero-brand">
+          <BrandBadge compact />
+          <view class="hero-brand-copy">
+            <view class="hero-eyebrow">知行雷达管理端</view>
+            <view class="card-title">移动后台总览</view>
+          </view>
+        </view>
         <view class="hero-copy">这里汇总当前学生群体的全局情况。你可以先看整体指标，再进入风险名单、院系对比、干预工作台、预测模块和分析成果。</view>
       </view>
 
@@ -89,6 +94,7 @@ import { onShow } from '@dcloudio/uni-app';
 import { getDashboardOverview } from '../../../api/admin';
 import { ensureRole } from '../../../common/session';
 import AdminBottomNav from '../../../components/AdminBottomNav.vue';
+import BrandBadge from '../../../components/BrandBadge.vue';
 
 const loading = ref(true);
 const error = ref('');
@@ -133,6 +139,18 @@ function openDetail(studentId) {
   font-weight: 700;
   opacity: 0.9;
   margin-bottom: 8rpx;
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.hero-brand-copy {
+  display: flex;
+  flex-direction: column;
 }
 
 .hero-copy {

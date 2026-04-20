@@ -1,7 +1,7 @@
 <template>
-  <view class="page-wrap admin-page">
+    <view class="page-wrap admin-page">
     <view class="hero-card">
-      <view class="hero-eyebrow">Admin Settings Center</view>
+      <view class="hero-eyebrow">知行雷达管理端</view>
       <view class="card-title">设置中心</view>
       <view class="hero-copy">这里统一管理管理员账号安全、接口地址、提醒方式、数据权限、展示偏好和帮助说明，让手机端和 web 后台保持一致。</view>
     </view>

@@ -8,14 +8,28 @@
 
     <view class="login-container">
       <view class="brand-section">
-        <view class="brand-icon">
-          <text>{{ currentRole === 'student' ? 'SG' : 'AC' }}</text>
-        </view>
-        <view class="brand-title">学生行为分析移动端</view>
+        <BrandBadge />
+        <view class="brand-title">知行雷达</view>
         <view class="brand-subtitle">{{ currentRole === 'student' ? '学生成长中心' : '管理员移动后台' }}</view>
+        <view class="brand-note">
+          {{ currentRole === 'student' ? '查看画像、趋势、群体对比和个性化报告。' : '查看总览、风险名单、院系对比和完整报告。' }}
+        </view>
       </view>
 
       <view class="panel-card form-shell">
+        <view class="network-card">
+          <view class="network-head">
+            <view class="status-title">连接地址</view>
+            <view class="helper-text">手机端登录前也可以先改接口地址。</view>
+          </view>
+          <input v-model="apiBase" class="field-input" placeholder="请输入接口地址，例如 http://192.168.1.8:5000" />
+          <view class="helper-text">当前默认地址：{{ defaultApiBase }}</view>
+          <view class="network-actions">
+            <button class="secondary-btn compact-btn" @click="saveApiBase">保存地址</button>
+            <button class="ghost-btn compact-btn" @click="resetApiBase">恢复默认</button>
+          </view>
+        </view>
+
         <view class="role-tabs">
           <view class="role-tab" :class="{ active: currentRole === 'student' }" @click="switchRole('student')">
             学生端
@@ -88,15 +102,18 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import { getDefaultApiBase } from '../../common/config';
+import { getApiBase, getDefaultApiBase, setApiBase } from '../../common/config';
 import { redirectIfLoggedIn } from '../../common/session';
 import { handleLoginSuccess, login, registerStudent } from '../../api/auth';
+import BrandBadge from '../../components/BrandBadge.vue';
 
 const currentRole = ref('student');
 const studentMode = ref('login');
 const loading = ref(false);
 const error = ref('');
 const success = ref('');
+const defaultApiBase = getDefaultApiBase();
+const apiBase = ref(getApiBase());
 
 const studentLoginForm = reactive({
   username: '',
@@ -116,6 +133,7 @@ const adminForm = reactive({
 });
 
 onShow(() => {
+  apiBase.value = getApiBase();
   redirectIfLoggedIn();
 });
 
@@ -127,6 +145,18 @@ function resetStatus() {
 function switchRole(role) {
   currentRole.value = role;
   resetStatus();
+}
+
+function saveApiBase() {
+  apiBase.value = setApiBase(apiBase.value);
+  success.value = `接口地址已更新为 ${apiBase.value}`;
+  error.value = '';
+}
+
+function resetApiBase() {
+  apiBase.value = setApiBase('');
+  success.value = `已恢复默认地址 ${defaultApiBase}`;
+  error.value = '';
 }
 
 async function handleStudentLogin() {
@@ -143,7 +173,7 @@ async function handleStudentLogin() {
     });
     handleLoginSuccess(user);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '学生登录失败，请稍后再试';
+    error.value = err instanceof Error ? `${err.message}；当前接口地址：${apiBase.value}` : '学生登录失败，请稍后再试';
   } finally {
     loading.value = false;
   }
@@ -173,7 +203,7 @@ async function handleRegister() {
     registerForm.password = '';
     registerForm.confirmPassword = '';
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '注册失败，请稍后再试';
+    error.value = err instanceof Error ? `${err.message}；当前接口地址：${apiBase.value}` : '注册失败，请稍后再试';
   } finally {
     loading.value = false;
   }
@@ -193,7 +223,7 @@ async function handleAdminLogin() {
     });
     handleLoginSuccess(user);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '管理员登录失败，请稍后再试';
+    error.value = err instanceof Error ? `${err.message}；当前接口地址：${apiBase.value}` : '管理员登录失败，请稍后再试';
   } finally {
     loading.value = false;
   }
@@ -256,21 +286,7 @@ async function handleAdminLogin() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12rpx;
-}
-
-.brand-icon {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 36rpx;
-  background: linear-gradient(135deg, #1677ff, #5aa9ff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 40rpx;
-  font-weight: 900;
-  box-shadow: 0 16rpx 48rpx rgba(22, 119, 255, 0.3);
+  gap: 14rpx;
 }
 
 .brand-title {
@@ -283,6 +299,15 @@ async function handleAdminLogin() {
 .brand-subtitle {
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.78);
+  text-align: center;
+}
+
+.brand-note {
+  max-width: 560rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
 }
 
 .form-shell {
@@ -291,6 +316,45 @@ async function handleAdminLogin() {
   gap: 24rpx;
   background: rgba(255, 255, 255, 0.94);
   border: 2rpx solid rgba(148, 163, 184, 0.14);
+}
+
+.network-card {
+  padding: 22rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  border: 2rpx solid rgba(96, 165, 250, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.network-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.network-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.compact-btn {
+  height: 72rpx;
+  font-size: 24rpx;
+}
+
+.ghost-btn {
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.7);
+  color: #475569;
+  border: 2rpx solid rgba(148, 163, 184, 0.24);
+}
+
+.ghost-btn::after {
+  border: none;
 }
 
 .role-tabs,
