@@ -1,194 +1,237 @@
 <template>
   <view class="page-wrap">
-    <view class="profile-hero">
-      <view class="hero-avatar">画</view>
-      <view class="hero-info">
-        <view class="hero-type">自律待提升型</view>
-        <view class="hero-desc">自律性不足，需加强管理</view>
-      </view>
+    <view v-if="loading" class="status-card loading">
+      <view class="status-title">加载中</view>
+      <view class="helper-text">正在读取画像和解释信息...</view>
     </view>
 
-    <view class="section-card">
-      <view class="section-title">优势与短板</view>
-      <view class="sw-block good">
-        <view class="sw-header">✦ 优势领域</view>
-        <view class="sw-item">
-          <view class="sw-dot good"></view>
-          <text>基础能力尚可，有学习回升空间</text>
+    <view v-else-if="error" class="status-card error">
+      <view class="status-title">画像加载失败</view>
+      <view class="helper-text">{{ error }}</view>
+      <button class="secondary-btn" @click="loadData">重新加载</button>
+    </view>
+
+    <template v-else-if="data">
+      <view class="hero-card">
+        <view class="card-title">{{ data.profileCategory }}</view>
+        <view class="hero-subtype" v-if="data.profileSubtype">{{ data.profileSubtype }}</view>
+        <view class="helper-copy">{{ data.profileExplanation || data.description }}</view>
+        <view class="chip-row">
+          <view class="chip">{{ data.riskLevel }}</view>
+          <view class="chip">{{ data.healthLevel }}</view>
+          <view class="chip">奖学金概率 {{ probabilityText }}</view>
         </view>
       </view>
-      <view class="sw-block warn">
-        <view class="sw-header">✦ 待提升领域</view>
-        <view class="sw-item">
-          <view class="sw-dot warn"></view>
-          <text>夜间活跃偏多，作业完成稳定性不足</text>
+
+      <view class="panel-card">
+        <view class="card-title">画像亮点</view>
+        <view class="chip-row">
+          <view v-for="item in data.profileHighlights" :key="item" class="tag-chip">{{ item }}</view>
         </view>
       </view>
-    </view>
 
-    <view class="section-card">
-      <view class="section-title">干预建议</view>
-      <view class="suggestion-item" v-for="(item, i) in suggestions" :key="i">
-        <view class="suggestion-num" :style="{ background: ['#2d7a4f', '#3b82f6', '#d4a32a', '#6366f1'][i] }">{{ i + 1 }}</view>
-        <view class="suggestion-text">{{ item }}</view>
+      <view class="panel-card">
+        <view class="card-title">优势与待提升</view>
+        <view class="section-block good">
+          <view class="section-label">优势领域</view>
+          <view v-for="item in data.strengths" :key="item" class="list-card">
+            <view class="muted emphasis">{{ item }}</view>
+          </view>
+        </view>
+        <view class="section-block warn">
+          <view class="section-label">待提升领域</view>
+          <view v-for="item in data.weaknesses" :key="item" class="list-card">
+            <view class="muted emphasis">{{ item }}</view>
+          </view>
+        </view>
       </view>
-    </view>
 
-    <view class="section-card">
-      <view class="section-title">群体画像说明</view>
-      <view class="desc-text">该类型学生通常在学业和综合发展方面表现波动，自律性不足导致学习节奏不规律。建议从作息管理、目标设定和同伴互助三方面入手，逐步建立正反馈循环。</view>
-    </view>
+      <view class="panel-card">
+        <view class="card-title">多维雷达拆解</view>
+        <view v-for="item in data.radar" :key="item.indicator" class="radar-item">
+          <view class="radar-head">
+            <view class="radar-label">{{ item.indicator }}</view>
+            <view class="radar-value">{{ item.value.toFixed(1) }}</view>
+          </view>
+          <view class="radar-track">
+            <view class="radar-fill" :style="{ width: radarWidth(item.value) }"></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="panel-card" v-if="riskDrivers.length">
+        <view class="card-title">优先干预建议</view>
+        <view v-for="item in riskDrivers" :key="item.id" class="driver-card">
+          <view class="driver-head">
+            <view class="driver-title">{{ item.title }}</view>
+            <view class="driver-priority">{{ priorityLabel(item.priority) }}</view>
+          </view>
+          <view class="muted">{{ item.description }}</view>
+          <view class="helper-text" v-if="item.reason">{{ item.reason }}</view>
+        </view>
+      </view>
+    </template>
   </view>
 </template>
 
 <script setup>
-const suggestions = [
-  '制定个性化学习计划，设定每日小目标',
-  '增加规律运动频次，改善睡眠质量',
-  '参与社团活动提升社交活跃度',
-  '调整作息减少深夜上网时间',
-];
+import { computed, ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
+import { ensureRole } from '../../../common/session';
+import { getStudentProfile } from '../../../api/student';
+
+const loading = ref(true);
+const error = ref('');
+const data = ref(null);
+
+const probabilityText = computed(() => {
+  const current = data.value || {};
+  return ((Number(current.scholarshipProbability) || 0) * 100).toFixed(1) + '%';
+});
+
+const riskDrivers = computed(() => {
+  const current = data.value || {};
+  return current.riskDrivers || [];
+});
+
+onShow(() => {
+  if (!ensureRole('student')) {
+    return;
+  }
+  loadData();
+});
+
+async function loadData() {
+  loading.value = true;
+  error.value = '';
+  try {
+    data.value = await getStudentProfile();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '学生画像加载失败';
+  } finally {
+    loading.value = false;
+  }
+}
+
+function priorityLabel(priority) {
+  if (priority === 'high') return '高优先级';
+  if (priority === 'low') return '低优先级';
+  return '中优先级';
+}
+
+function radarWidth(value) {
+  return Math.max(Math.min(Number(value) || 0, 100), 4) + '%';
+}
 </script>
 
 <style scoped>
-.page-wrap {
-  padding: 24rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
+.hero-subtype {
+  font-size: 28rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
 }
 
-.profile-hero {
-  background: #fff;
-  border-radius: 28rpx;
-  padding: 36rpx;
-  display: flex;
-  align-items: center;
-  gap: 28rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
-}
-
-.hero-avatar {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 28rpx;
-  background: linear-gradient(135deg, #ef4444, #f59e0b);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40rpx;
-  font-weight: 900;
-  box-shadow: 0 8rpx 24rpx rgba(239, 68, 68, 0.3);
-}
-
-.hero-info {
-  flex: 1;
-}
-
-.hero-type {
-  font-size: 34rpx;
-  font-weight: 900;
-  color: #ef4444;
-  margin-bottom: 8rpx;
-}
-
-.hero-desc {
+.helper-copy {
   font-size: 26rpx;
-  color: #5f7267;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.92);
 }
 
-.section-card {
-  background: #fff;
-  border-radius: 28rpx;
-  padding: 32rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 800;
-  color: #1a2e1f;
-  margin-bottom: 24rpx;
-}
-
-.sw-block {
+.section-block {
   padding: 24rpx;
-  border-radius: 16rpx;
-  margin-bottom: 16rpx;
+  border-radius: 20rpx;
+  margin-top: 18rpx;
 }
 
-.sw-block.good {
+.section-block.good {
   background: #f0fdf4;
 }
 
-.sw-block.warn {
+.section-block.warn {
   background: #fffbeb;
 }
 
-.sw-header {
-  font-weight: 700;
+.section-label {
   font-size: 26rpx;
-  margin-bottom: 12rpx;
-}
-
-.sw-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12rpx;
-  font-size: 26rpx;
-  color: #5f7267;
-  line-height: 1.6;
-}
-
-.sw-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  margin-top: 14rpx;
-  flex-shrink: 0;
-}
-
-.sw-dot.good {
-  background: #10b981;
-}
-
-.sw-dot.warn {
-  background: #f59e0b;
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  padding: 20rpx;
-  background: #f8faf6;
-  border-radius: 14rpx;
-  margin-bottom: 12rpx;
-}
-
-.suggestion-num {
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 10rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
   font-weight: 800;
-  font-size: 22rpx;
-  flex-shrink: 0;
-}
-
-.suggestion-text {
-  font-size: 26rpx;
   color: #1a2e1f;
-  line-height: 1.6;
+  margin-bottom: 12rpx;
 }
 
-.desc-text {
+.emphasis {
+  color: #1a2e1f;
+  font-weight: 700;
+}
+
+.radar-item {
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #eef1eb;
+}
+
+.radar-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.radar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.radar-label {
   font-size: 26rpx;
-  color: #5f7267;
-  line-height: 1.8;
+  font-weight: 700;
+  color: #1a2e1f;
+}
+
+.radar-value {
+  font-size: 24rpx;
+  color: #2d7a4f;
+  font-weight: 800;
+}
+
+.radar-track {
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: #e5efe6;
+  overflow: hidden;
+}
+
+.radar-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  border-radius: 999rpx;
+}
+
+.driver-card {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: #f8faf6;
+  margin-top: 16rpx;
+}
+
+.driver-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.driver-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #1a2e1f;
+}
+
+.driver-priority {
+  font-size: 22rpx;
+  color: #b45309;
+  background: #fff7ed;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
 }
 </style>

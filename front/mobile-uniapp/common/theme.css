@@ -6,15 +6,19 @@ page {
 
 .page-wrap {
   padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
 }
 
 .hero-card,
-.panel-card {
+.panel-card,
+.section-card,
+.status-card {
   background: #ffffff;
   border-radius: 28rpx;
-  padding: 24rpx;
+  padding: 28rpx;
   box-shadow: 0 18rpx 40rpx rgba(34, 49, 39, 0.08);
-  margin-bottom: 20rpx;
 }
 
 .hero-card {
@@ -22,26 +26,97 @@ page {
   color: #ffffff;
 }
 
-.card-title {
+.card-title,
+.section-title {
   font-size: 34rpx;
   font-weight: 700;
   margin-bottom: 12rpx;
 }
 
-.muted {
+.muted,
+.helper-text,
+.empty-text {
   color: #68756d;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.primary-btn,
+.secondary-btn {
+  height: 84rpx;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  color: #ffffff;
+}
+
+.secondary-btn {
+  background: #f0fdf4;
+  color: #2d7a4f;
+  border: 2rpx solid rgba(45, 122, 79, 0.18);
+}
+
+.status-card.loading {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-card.error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.status-card.empty {
+  background: #f8faf6;
+  color: #68756d;
+}
+
+.status-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  margin-bottom: 10rpx;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.chip {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.tag-chip {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
 }
 
-.metric-item {
-  background: #f6f8f4;
+.metric-card {
+  padding: 24rpx;
   border-radius: 22rpx;
-  padding: 18rpx;
+  background: #f6f8f4;
 }
 
 .metric-label {
@@ -51,6 +126,17 @@ page {
 
 .metric-value {
   margin-top: 12rpx;
-  font-size: 36rpx;
-  font-weight: 700;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1a2e1f;
+}
+
+.list-card {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #eef1eb;
+}
+
+.list-card:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
