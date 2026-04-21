@@ -22,6 +22,7 @@ const router = createRouter({
                 { path: '/predict', name: 'predict', component: () => import('../views/predict/StudentPredictView.vue'), meta: { title: '在线预测' } },
                 { path: '/compare', name: 'compare', component: () => import('../views/compare/StudentCompareView.vue'), meta: { title: '群体对比' } },
                 { path: '/report', name: 'report', component: () => import('../views/report/StudentReportView.vue'), meta: { title: '个性化报告' } },
+                { path: '/chat', name: 'chat', component: () => import('../views/chat/StudentChatView.vue'), meta: { title: '智能助手' } },
                 { path: '/settings', name: 'settings', component: () => import('../views/settings/StudentSettingsView.vue'), meta: { title: '设置中心' } }
             ]
         }

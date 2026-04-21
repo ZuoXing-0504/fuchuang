@@ -1,13 +1,13 @@
 <template>
   <view class="page-wrap">
-    <view class="hero-card">
-      <view class="hero-eyebrow">知行雷达学生端</view>
-      <view class="card-title">设置中心</view>
-      <view class="hero-copy">这里统一管理账号安全、接口地址、报告导出、展示偏好和帮助信息，让手机端和 web 端保持一致的使用逻辑。</view>
+    <view class="hero-card settings-hero">
+      <view class="hero-caption">知行雷达学生端</view>
+      <view class="hero-title">设置中心</view>
+      <view class="hero-desc">统一管理账号安全、接口地址、展示偏好和常用入口，让手机端和 web 端保持同一套使用逻辑。</view>
     </view>
 
     <view class="metric-grid">
-      <view v-for="item in statusCards" :key="item.label" class="metric-card">
+      <view v-for="item in statusCards" :key="item.label" class="metric-card light-card">
         <view class="metric-label">{{ item.label }}</view>
         <view class="metric-value small">{{ item.value }}</view>
         <view class="muted">{{ item.note }}</view>
@@ -29,7 +29,7 @@
 
     <view class="panel-card">
       <view class="card-title">接口与同步</view>
-      <view class="helper-text">如果 web 端注册好的账号在手机端看不到，请先确认这里的接口地址仍然指向当前电脑后端，再刷新账号信息。</view>
+      <view class="helper-text">如果 web 端注册好的账号或画像结果在手机端看不到，请先确认这里仍然指向当前后端，再刷新账号信息。</view>
       <input v-model="apiBase" class="field-input top-gap" placeholder="请输入接口地址，例如 http://192.168.5.8:5000" />
       <view class="detail-row top-gap"><text class="detail-label">默认接口</text><text class="detail-value">{{ defaultApiBase }}</text></view>
       <view class="action-row top-gap">
@@ -39,7 +39,7 @@
     </view>
 
     <view class="panel-card">
-      <view class="card-title">通知与隐私</view>
+      <view class="card-title">通知与展示偏好</view>
       <view v-for="item in switches" :key="item.label" class="switch-card">
         <view class="switch-copy-wrap">
           <view class="switch-title">{{ item.label }}</view>
@@ -52,19 +52,28 @@
     <view class="panel-card">
       <view class="card-title">常用入口</view>
       <view class="shortcut-grid">
-        <view class="shortcut-card" @click="switchStudentTab('/pages/student/home/index')">
+        <view class="shortcut-card card-blue" @click="switchStudentTab('/pages/student/home/index')">
+          <view class="shortcut-badge">首</view>
           <view class="shortcut-title">首页</view>
           <view class="muted">回到学生首页总览</view>
         </view>
-        <view class="shortcut-card" @click="switchStudentTab('/pages/student/predict/index')">
+        <view class="shortcut-card card-cyan" @click="switchStudentTab('/pages/student/predict/index')">
+          <view class="shortcut-badge">测</view>
           <view class="shortcut-title">在线预测</view>
           <view class="muted">直接查看所有模型结果</view>
         </view>
-        <view class="shortcut-card" @click="openPage('/pages/student/compare/index')">
+        <view class="shortcut-card card-violet" @click="openPage('/pages/student/compare/index')">
+          <view class="shortcut-badge">比</view>
           <view class="shortcut-title">群体对比</view>
           <view class="muted">查看本人和群体均值差异</view>
         </view>
-        <view class="shortcut-card" @click="switchStudentTab('/pages/student/report/index')">
+        <view class="shortcut-card card-green" @click="openPage('/pages/student/chat/index')">
+          <view class="shortcut-badge">聊</view>
+          <view class="shortcut-title">智能助手</view>
+          <view class="muted">围绕画像、风险与建议交流</view>
+        </view>
+        <view class="shortcut-card card-rose" @click="switchStudentTab('/pages/student/report/index')">
+          <view class="shortcut-badge">报</view>
           <view class="shortcut-title">个性化报告</view>
           <view class="muted">查看完整结论和解释依据</view>
         </view>
@@ -112,10 +121,10 @@ const statusCards = computed(() => [
 ]);
 
 const switches = computed(() => [
-  { key: 'reportNotice', label: '报告更新提醒', note: '当个性化报告更新时在页面内提醒。', value: flags.reportNotice },
+  { key: 'reportNotice', label: '报告更新提醒', note: '当个性化报告更新时，在页面内提醒。', value: flags.reportNotice },
   { key: 'scoreNotice', label: '得分公式提醒', note: '在画像页和报告页保留公式入口提示。', value: flags.scoreNotice },
   { key: 'showSensitiveFields', label: '显示敏感字段', note: '控制详细行为与成绩字段的默认可见性。', value: flags.showSensitiveFields },
-  { key: 'includeExplanationInExport', label: '导出附带解释依据', note: '导出报告时包含预测依据和维度判读。', value: flags.includeExplanationInExport }
+  { key: 'includeExplanationInExport', label: '导出附带解释依据', note: '导出报告时保留预测依据和维度判断。', value: flags.includeExplanationInExport }
 ]);
 
 const helpCards = [
@@ -176,17 +185,35 @@ function switchStudentTab(url) {
 </script>
 
 <style scoped>
-.hero-eyebrow {
+.settings-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(144, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
   font-size: 22rpx;
   font-weight: 700;
-  opacity: 0.9;
+  color: #4a6b91;
   margin-bottom: 8rpx;
 }
 
-.hero-copy {
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #526b88;
+}
+
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
 }
 
 .top-gap {
@@ -202,7 +229,7 @@ function switchStudentTab(url) {
   justify-content: space-between;
   gap: 20rpx;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {
@@ -236,9 +263,9 @@ function switchStudentTab(url) {
 .help-card,
 .shortcut-card {
   padding: 20rpx 22rpx;
-  border-radius: 22rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 2rpx solid rgba(148, 163, 184, 0.12);
+  border-radius: 24rpx;
+  border: 1rpx solid rgba(177, 201, 227, 0.22);
+  box-shadow: 0 14rpx 28rpx rgba(45, 93, 154, 0.04);
 }
 
 .switch-card + .switch-card,
@@ -251,6 +278,7 @@ function switchStudentTab(url) {
   justify-content: space-between;
   align-items: center;
   gap: 18rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
 .switch-title,
@@ -265,5 +293,58 @@ function switchStudentTab(url) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
+}
+
+.shortcut-badge {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 12rpx;
+}
+
+.card-blue {
+  background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
+}
+
+.card-blue .shortcut-badge {
+  background: linear-gradient(135deg, #0f6dff, #53b2ff);
+}
+
+.card-cyan {
+  background: linear-gradient(180deg, #ffffff 0%, #ecfbff 100%);
+}
+
+.card-cyan .shortcut-badge {
+  background: linear-gradient(135deg, #0ea5b7, #59d5f3);
+}
+
+.card-violet {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f4ff 100%);
+}
+
+.card-violet .shortcut-badge {
+  background: linear-gradient(135deg, #5567ff, #8c91ff);
+}
+
+.card-green {
+  background: linear-gradient(180deg, #ffffff 0%, #eefcf5 100%);
+}
+
+.card-green .shortcut-badge {
+  background: linear-gradient(135deg, #10956c, #45cb9b);
+}
+
+.card-rose {
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f5 100%);
+}
+
+.card-rose .shortcut-badge {
+  background: linear-gradient(135deg, #f0517f, #ff8ba8);
 }
 </style>

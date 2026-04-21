@@ -8,3 +8,4 @@ scikit-learn
 joblib
 mysql-connector-python
 openpyxl
+requests

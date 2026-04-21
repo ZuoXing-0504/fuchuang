@@ -1,6 +1,8 @@
 page {
-  background: linear-gradient(180deg, #f5f8fc 0%, #eef4fb 100%);
-  color: #1f2937;
+  background:
+    radial-gradient(circle at top right, rgba(183, 233, 255, 0.42), transparent 22%),
+    linear-gradient(180deg, #f2f8ff 0%, #eef5fb 28%, #f7faff 100%);
+  color: #18212f;
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -17,28 +19,30 @@ page {
 .panel-card,
 .section-card,
 .status-card {
-  background: #ffffff;
-  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 32rpx;
   padding: 28rpx;
-  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 20rpx 50rpx rgba(28, 73, 128, 0.08),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(14rpx);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #ffffff;
 }
 
 .card-title,
 .section-title {
   font-size: 34rpx;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 12rpx;
 }
 
 .muted,
 .helper-text,
 .empty-text {
-  color: #64748b;
+  color: #738399;
   font-size: 24rpx;
   line-height: 1.7;
 }
@@ -46,7 +50,7 @@ page {
 .primary-btn,
 .secondary-btn {
   height: 84rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   font-size: 28rpx;
   font-weight: 700;
   display: flex;
@@ -60,28 +64,29 @@ page {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #1677ff, #5aa9ff);
+  background: linear-gradient(135deg, #0f6dff 0%, #2896ff 100%);
   color: #ffffff;
+  box-shadow: 0 16rpx 28rpx rgba(15, 109, 255, 0.18);
 }
 
 .secondary-btn {
-  background: #f8fbff;
-  color: #1677ff;
-  border: 2rpx solid rgba(22, 119, 255, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f6dff;
+  border: 2rpx solid rgba(15, 109, 255, 0.12);
 }
 
 .status-card.loading {
-  background: #eff6ff;
+  background: rgba(239, 246, 255, 0.94);
   color: #1d4ed8;
 }
 
 .status-card.error {
-  background: #fef2f2;
+  background: rgba(254, 242, 242, 0.94);
   color: #b91c1c;
 }
 
 .status-card.empty {
-  background: #f8faf6;
+  background: rgba(248, 250, 246, 0.94);
   color: #68756d;
 }
 
@@ -102,14 +107,14 @@ page {
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .tag-chip {
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
-  background: #eff6ff;
-  color: #2563eb;
+  background: #eef5ff;
+  color: #236ae8;
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -122,13 +127,14 @@ page {
 
 .metric-card {
   padding: 24rpx;
-  border-radius: 22rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 2rpx solid rgba(148, 163, 184, 0.12);
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid rgba(173, 198, 228, 0.18);
+  box-shadow: 0 14rpx 34rpx rgba(45, 93, 154, 0.05);
 }
 
 .metric-label {
-  color: #64748b;
+  color: #738399;
   font-size: 24rpx;
 }
 
@@ -141,7 +147,7 @@ page {
 
 .list-card {
   padding: 22rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .list-card:last-child {
@@ -152,9 +158,9 @@ page {
 .field-input {
   height: 88rpx;
   padding: 0 24rpx;
-  border-radius: 18rpx;
-  border: 2rpx solid #dbe7f6;
-  background: #ffffff;
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(198, 215, 236, 0.86);
+  background: rgba(255, 255, 255, 0.96);
   font-size: 28rpx;
   color: #0f172a;
   box-sizing: border-box;

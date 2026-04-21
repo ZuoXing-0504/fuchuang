@@ -24,72 +24,72 @@ const toneColorMap = {
   danger: '#ef4444'
 } as const;
 
-const competitionNotes = computed(() => [
-  '这些图表不是装饰信息，而是系统对全样本数据做出的核心分析结果。',
+const overviewNotes = computed(() => [
+  '这些图不是装饰信息，而是系统对全样本数据形成的核心分析结果。',
   '它们共同支撑群体画像、风险关联、行为规律和资源利用等多个分析视角。',
-  '建议按“基础分布 -> 风险关联 -> 群体画像”这条顺序阅读，整体逻辑最清晰。'
+  '建议按“基础分布 -> 风险关联 -> 群体画像”的顺序阅读，整体逻辑最清晰。'
 ]);
 
 function chartUrl(url: string) {
   return url.startsWith('http') ? url : `http://127.0.0.1:5000${url}`;
 }
 
-const chartDetailMap: Record<string, { xAxis: string; yAxis: string; competitionUse: string; requirementFit: string; readingGuide: string }> = {
+const chartDetailMap: Record<string, { xAxis: string; yAxis: string; useCase: string; scenario: string; readingGuide: string }> = {
   '01': {
     xAxis: '学习时长分组区间',
     yAxis: '学生人数',
-    competitionUse: '展示全样本学习投入的总体分布，证明系统具备群体层面的分析能力。',
-    requirementFit: '适用于展示学习投入结构、群体画像和整体可视化分析结果。',
-    readingGuide: '先看高峰落在哪个学习时长区间，再看是否有长尾分布，用来说明整体投入结构。'
+    useCase: '展示全样本学习投入的总体分布，说明系统具备群体层面的分析能力。',
+    scenario: '适用于查看学习投入结构、识别多数样本集中区间和长尾区间。',
+    readingGuide: '先看高峰落在哪个学习时长区间，再看是否存在明显长尾，用来说明整体投入结构。'
   },
   '02': {
     xAxis: '图书馆打卡次数分组区间',
     yAxis: '学生人数',
-    competitionUse: '展示线下学习资源利用情况，补足“线上行为之外”的学习场景分析。',
-    requirementFit: '适用于展示资源利用维度和群体分层情况。',
-    readingGuide: '如果低打卡区间人数很多，说明资源利用存在明显分层，可作为后续解释依据。'
+    useCase: '展示线下学习资源利用情况，补足线上行为之外的学习场景分析。',
+    scenario: '适用于判断图书馆资源利用是否存在明显分层。',
+    readingGuide: '如果低打卡区间人数明显偏多，说明资源利用存在明显层级差异。'
   },
   '03': {
     xAxis: '健康指数分组区间',
     yAxis: '学生人数',
-    competitionUse: '展示健康发展结构，说明系统不是只看成绩，也覆盖身心发展维度。',
-    requirementFit: '适用于展示健康发展维度的整体结构。',
-    readingGuide: '重点看健康指数是否集中在中低段，用来说明健康发展这一维是否需要重点关注。'
+    useCase: '展示健康发展结构，说明系统并不是只看成绩，也覆盖身心状态。',
+    scenario: '适用于查看健康发展这一维的整体结构和异常集中区间。',
+    readingGuide: '重点看样本是否过度集中在中低区间，这能帮助判断健康维度是否值得重点关注。'
   },
   '04': {
     xAxis: '夜间上网占比分组区间',
     yAxis: '学生人数',
-    competitionUse: '展示夜间行为偏移和作息规律，是行为规律维度的重要证据。',
-    requirementFit: '适用于展示行为规律和夜间活跃特征。',
-    readingGuide: '如果高夜间占比呈明显长尾，就能说明少数学生存在更明显的夜间偏移。'
+    useCase: '展示夜间行为偏移和作息规律，是行为规律维度的重要证据。',
+    scenario: '适用于识别夜间偏移和高夜活跃群体。',
+    readingGuide: '如果高夜间占比呈现长尾，就能说明少数学生存在更明显的夜间偏移。'
   },
   '05': {
     xAxis: '学习时长',
     yAxis: '风险概率',
-    competitionUse: '展示学习投入和风险之间的关联，用来解释风险模型为什么这样判断。',
-    requirementFit: '适用于展示学习投入和风险之间的关联。',
-    readingGuide: '重点看低学习时长区域是否聚集更多高风险点，这能直接支撑“学习投入不足会抬高风险”。'
+    useCase: '展示学习投入和风险之间的关联，用来解释风险模型为什么这样判断。',
+    scenario: '适用于说明学习投入不足会如何抬升风险。',
+    readingGuide: '重点看低学习时长区域是否聚集更多高风险点，这能直接支撑学习投入与风险关联的结论。'
   },
   '06': {
     xAxis: '图书馆打卡次数',
     yAxis: '风险概率',
-    competitionUse: '展示资源利用和风险之间的关系，补足线下场景的解释链路。',
-    requirementFit: '适用于展示资源利用和风险之间的关联。',
-    readingGuide: '如果低图书馆利用区域更容易出现高风险点，就能支撑“补线下学习资源利用”的干预建议。'
+    useCase: '展示资源利用与风险之间的关系，补充线下场景的解释链路。',
+    scenario: '适用于支撑“资源利用不足与风险升高有关”的说明。',
+    readingGuide: '如果低资源利用区域更容易出现高风险点，就能支持补强线下学习资源利用的建议。'
   },
   '07': {
     xAxis: '学生画像类别',
     yAxis: '人数',
-    competitionUse: '展示四类主画像的样本分布，是群体模式识别成果的直接证明。',
-    requirementFit: '适用于展示当前识别出的主要学生群体分布。',
-    readingGuide: '这张图主要回答“系统到底识别出哪些群体、每类有多少人”，是聚类成果最直观的图。'
+    useCase: '展示四类主画像的样本分布，是群体模式识别结果的直接证据。',
+    scenario: '适用于说明系统识别出了哪些主群体、每类有多少人。',
+    readingGuide: '这张图主要回答“系统识别出了哪些群体、每类大概多少人”。'
   },
   '08': {
     xAxis: '核心特征维度',
     yAxis: '各群体标准化均值',
-    competitionUse: '比较不同画像群体在学习投入、行为规律、健康发展等维度上的差异。',
-    requirementFit: '适用于展示不同群体在关键维度上的差异。',
-    readingGuide: '如果不同群体在多条维度线上差异明显，就能说明这四类画像是有真实行为差异支撑的。'
+    useCase: '比较不同画像群体在学习投入、行为规律、健康发展等维度上的差异。',
+    scenario: '适用于说明四类画像背后确实有真实的行为差异支撑。',
+    readingGuide: '如果不同群体在多条维度线上差异明显，就能说明画像分类是有真实行为基础的。'
   }
 };
 
@@ -97,9 +97,9 @@ function chartDetail(chart: AnalysisResultsData['charts'][number]) {
   return chartDetailMap[chart.id] ?? {
     xAxis: '图表横轴',
     yAxis: '图表纵轴',
-    competitionUse: '用于展示系统的分析成果。',
-    requirementFit: '适用于展示系统的全样本分析结果。',
-    readingGuide: '建议结合峰值、分布和异常点来说明这张图。'
+    useCase: '用于展示系统生成的全样本分析结果。',
+    scenario: '适用于查看整体结构、差异和异常分布。',
+    readingGuide: '建议结合峰值、长尾和异常区间来说明这张图。'
   };
 }
 
@@ -116,7 +116,7 @@ function openChartDrawer(chart: AnalysisResultsData['charts'][number]) {
       <div class="hero-copy">
         <div class="hero-eyebrow">Analysis Gallery</div>
         <h1 class="hero-title">分析成果</h1>
-        <p class="hero-subtitle">这 8 张图是系统对全样本数据形成的核心分析结果，用来支撑群体洞察、画像识别和多维解释能力。</p>
+        <p class="hero-subtitle">这里集中展示系统对全样本形成的 8 张核心分析图。它们共同支撑群体洞察、画像识别和多维解释能力，点击图片可查看详细说明。</p>
       </div>
       <div class="hero-side">
         <div class="hero-chip">全样本图表</div>
@@ -152,11 +152,11 @@ function openChartDrawer(chart: AnalysisResultsData['charts'][number]) {
         <template #header>
           <div class="card-header-inner">
             <span>图表用途</span>
-            <span class="minor-copy">为什么要有这 8 张图</span>
+            <span class="minor-copy">为什么需要这些分析图</span>
           </div>
         </template>
         <div class="helper-list">
-          <div v-for="item in competitionNotes" :key="item" class="helper-item">{{ item }}</div>
+          <div v-for="item in overviewNotes" :key="item" class="helper-item">{{ item }}</div>
         </div>
         <div v-if="data?.chartStatus?.installHint" class="chart-helper">
           <div class="helper-title">补图提示</div>
@@ -171,7 +171,7 @@ function openChartDrawer(chart: AnalysisResultsData['charts'][number]) {
 
     <el-skeleton v-if="loading" animated :rows="8" />
 
-    <div class="chart-grid" v-else-if="data?.chartStatus?.ready">
+    <div v-else-if="data?.chartStatus?.ready" class="chart-grid">
       <article v-for="chart in data?.charts ?? []" :key="chart.id" class="chart-card panel-card" @click="openChartDrawer(chart)">
         <div class="chart-top">
           <div>
@@ -205,14 +205,14 @@ function openChartDrawer(chart: AnalysisResultsData['charts'][number]) {
         </div>
         <div class="drawer-card">
           <div class="drawer-label">图表用途</div>
-          <div class="drawer-copy">{{ chartDetail(activeChart).competitionUse }}</div>
+          <div class="drawer-copy">{{ chartDetail(activeChart).useCase }}</div>
         </div>
         <div class="drawer-card">
           <div class="drawer-label">适用场景</div>
-          <div class="drawer-copy">{{ chartDetail(activeChart).requirementFit }}</div>
+          <div class="drawer-copy">{{ chartDetail(activeChart).scenario }}</div>
         </div>
         <div class="drawer-card">
-          <div class="drawer-label">如何讲这张图</div>
+          <div class="drawer-label">如何阅读</div>
           <div class="drawer-copy">{{ chartDetail(activeChart).readingGuide }}</div>
         </div>
         <div class="drawer-card success">

@@ -1,6 +1,7 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿<script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import BrandRadar from '../components/BrandRadar.vue';
 import { useStudentAuthStore } from '../stores/auth';
 import { useStudentLayoutPreferences } from '../utils/layoutPreferences';
 
@@ -10,7 +11,7 @@ const auth = useStudentAuthStore();
 const preferences = useStudentLayoutPreferences();
 const collapsed = ref(false);
 
-type NavIconKey = 'home' | 'profile' | 'predict' | 'compare' | 'report' | 'analysis' | 'settings';
+type NavIconKey = 'home' | 'profile' | 'predict' | 'compare' | 'report' | 'analysis' | 'chat' | 'settings';
 
 const navItems = [
   { path: '/home', label: '首页', icon: 'home' as NavIconKey },
@@ -19,6 +20,7 @@ const navItems = [
   { path: '/compare', label: '群体对比', icon: 'compare' as NavIconKey },
   { path: '/report', label: '个性化报告', icon: 'report' as NavIconKey },
   { path: '/analysis', label: '全样本分析', icon: 'analysis' as NavIconKey },
+  { path: '/chat', label: '智能助手', icon: 'chat' as NavIconKey },
   { path: '/settings', label: '设置中心', icon: 'settings' as NavIconKey }
 ];
 
@@ -29,6 +31,7 @@ const navIconPaths: Record<NavIconKey, string[]> = {
   compare: ['M6 6h5v12H6z', 'M13 9h5v9h-5z'],
   report: ['M8 4.5h6l3 3V19H8z', 'M14 4.5V8h3', 'M10 12h5', 'M10 15h5'],
   analysis: ['M6 18V11', 'M11 18V7', 'M16 18v-4'],
+  chat: ['M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z', 'M8 10h8', 'M8 14h6'],
   settings: ['M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z', 'M12 3v2.2', 'M12 18.8V21', 'M4.9 4.9l1.6 1.6', 'M17.5 17.5l1.6 1.6', 'M3 12h2.2', 'M18.8 12H21', 'M4.9 19.1l1.6-1.6', 'M17.5 6.5l1.6-1.6']
 };
 
@@ -56,18 +59,11 @@ function handleLogout() {
     <aside class="sidebar">
       <div class="sidebar-top">
         <div class="brand-wrap">
-          <div class="brand-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none">
-              <rect x="7" y="8" width="34" height="32" rx="12" />
-              <path d="M16 31V18h16v13" />
-              <path d="M20 25c1.4-2.8 3.1-4.2 4-4.2s2.6 1.4 4 4.2" />
-              <path d="M20 31h8" />
-            </svg>
-          </div>
+          <BrandRadar compact />
           <transition name="fade">
             <div v-if="!collapsed" class="brand-copy">
-              <div class="brand-title">学生成长档案</div>
-              <div class="brand-subtitle">Student Growth Center</div>
+              <div class="brand-title">知行雷达</div>
+              <div class="brand-subtitle">学生成长中心</div>
             </div>
           </transition>
         </div>
@@ -102,9 +98,9 @@ function handleLogout() {
           </div>
         </div>
         <button class="logout-button" @click="handleLogout">
-          <span>退</span>
+          <span class="logout-icon">⇦</span>
           <transition name="fade">
-            <span v-if="!collapsed">退出登录</span>
+            <span v-if="!collapsed" class="logout-label">退出登录</span>
           </transition>
         </button>
       </div>
@@ -173,7 +169,6 @@ function handleLogout() {
   gap: 12px;
 }
 
-.brand-icon,
 .account-avatar,
 .top-avatar,
 .nav-icon {
@@ -182,7 +177,6 @@ function handleLogout() {
   flex-shrink: 0;
 }
 
-.brand-icon,
 .top-avatar,
 .account-avatar {
   width: 40px;
@@ -191,15 +185,6 @@ function handleLogout() {
   background: linear-gradient(135deg, #1677ff, #5aa9ff);
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
-}
-
-.brand-icon svg {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .brand-title {
@@ -233,6 +218,7 @@ function handleLogout() {
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -241,11 +227,30 @@ function handleLogout() {
   color: #475569;
   text-decoration: none;
   font-weight: 700;
+  overflow: hidden;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 8px auto 8px 8px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(22, 119, 255, 0), rgba(22, 119, 255, 0.64), rgba(34, 197, 94, 0));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .nav-item:hover {
   background: #edf5ff;
   color: #1677ff;
+  transform: translateX(1px);
+}
+
+.nav-item:hover::before,
+.nav-item.active::before {
+  opacity: 1;
 }
 
 .nav-item.active {
@@ -304,13 +309,30 @@ function handleLogout() {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid #dbe7f6;
-  background: #fff;
-  color: #475569;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  background: linear-gradient(180deg, #fffefe 0%, #fff5f5 100%);
+  color: #b45309;
   cursor: pointer;
   font-weight: 700;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.logout-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #fb7185, #f97316);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.logout-label {
+  letter-spacing: 0.02em;
 }
 
 .main-shell {

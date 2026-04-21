@@ -12,14 +12,15 @@
     </view>
 
     <template v-else-if="data">
-      <view class="hero-card">
-        <view class="card-title">{{ data.title }}</view>
-        <view class="hero-copy">{{ data.summary }}</view>
+      <view class="hero-card report-hero">
+        <view class="hero-caption">知行雷达 · 个性化报告</view>
+        <view class="hero-title">{{ data.title }}</view>
+        <view class="hero-desc">{{ data.summary }}</view>
       </view>
 
       <view v-if="data.reportMeta" class="panel-card">
         <view class="card-title">报告对象</view>
-        <view class="detail-row"><text class="detail-label">姓名</text><text class="detail-value">{{ data.reportMeta.studentName }}</text></view>
+        <view class="detail-row"><text class="detail-label">学号</text><text class="detail-value">{{ data.reportMeta.studentName || '未提供' }}</text></view>
         <view class="detail-row"><text class="detail-label">学院</text><text class="detail-value">{{ data.reportMeta.college || '未提供' }}</text></view>
         <view class="detail-row"><text class="detail-label">专业</text><text class="detail-value">{{ data.reportMeta.major || '未提供' }}</text></view>
         <view class="detail-row"><text class="detail-label">主画像</text><text class="detail-value">{{ data.reportMeta.profileCategory || '未提供' }}</text></view>
@@ -27,7 +28,7 @@
       </view>
 
       <view class="metric-grid" v-if="data.scoreCards.length">
-        <view v-for="item in data.scoreCards" :key="item.label" class="metric-card">
+        <view v-for="item in data.scoreCards" :key="item.label" class="metric-card light-card">
           <view class="metric-label">{{ item.label }}</view>
           <view class="metric-value">{{ item.score }}</view>
         </view>
@@ -106,27 +107,52 @@ async function loadData() {
 </script>
 
 <style scoped>
-.hero-copy {
+.report-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4a6b91;
+  margin-bottom: 8rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #526b88;
 }
 
 .top-gap {
   margin-top: 14rpx;
 }
 
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
+}
+
 .sub-title {
   font-size: 26rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #1b2533;
   margin-bottom: 10rpx;
 }
 
 .feature-table + .feature-table {
   margin-top: 20rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #eef1eb;
+  border-top: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row {
@@ -134,7 +160,7 @@ async function loadData() {
   justify-content: space-between;
   gap: 20rpx;
   padding: 14rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {

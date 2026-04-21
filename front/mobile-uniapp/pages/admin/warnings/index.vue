@@ -1,8 +1,14 @@
 <template>
   <view class="page-wrap admin-page">
+    <view class="hero-card warnings-hero">
+      <view class="hero-caption">知行雷达管理端</view>
+      <view class="hero-title">风险名单</view>
+      <view class="hero-desc">聚合查看重点学生，支持搜索、进入单学生详情和完整报告，口径与 web 管理端一致。</view>
+    </view>
+
     <view class="panel-card">
-      <view class="card-title">风险名单</view>
-      <input v-model="keyword" class="field-input" placeholder="输入学号、学院、专业或画像类别搜索" />
+      <view class="card-title">筛选</view>
+      <input v-model="keyword" class="field-input top-gap" placeholder="输入学号、学院、专业或画像类别搜索" />
       <view class="helper-text top-gap">当前显示 {{ filteredRows.length }} / {{ rows.length }} 名学生</view>
     </view>
 
@@ -81,7 +87,7 @@ async function loadData() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await getWarnings({ page: 1, pageSize: 500 });
+    const result = await getWarnings({ page: 1, pageSize: 5000 });
     rows.value = result.list || [];
   } catch (err) {
     error.value = err instanceof Error ? err.message : '风险名单加载失败';
@@ -104,13 +110,40 @@ function openReport(studentId) {
   padding-bottom: 0;
 }
 
+.warnings-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4a6b91;
+  margin-bottom: 8rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #526b88;
+}
+
 .top-gap {
   margin-top: 12rpx;
 }
 
 .warning-card {
   padding: 22rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .warning-card:last-child {

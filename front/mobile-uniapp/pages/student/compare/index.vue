@@ -12,12 +12,10 @@
     </view>
 
     <template v-else-if="data">
-      <view class="hero-card">
-        <view>
-          <view class="hero-eyebrow">群体对比</view>
-          <view class="card-title">{{ data.studentName || data.studentId || '当前学生' }}</view>
-          <view class="hero-copy">把你的个体表现放到所属群体和全样本中对照，帮助理解你当前所处的位置和更值得优先关注的方向。</view>
-        </view>
+      <view class="hero-card compare-hero">
+        <view class="hero-caption">知行雷达 · 群体对比</view>
+        <view class="hero-title">{{ data.studentName || data.studentId || '当前学生' }}</view>
+        <view class="hero-desc">把你的个体表现放到所属群体和全样本中对照，帮助理解当前位置和更值得优先关注的方向。</view>
         <view class="chip-row top-gap">
           <view class="chip">本人</view>
           <view class="chip">{{ data.clusterLabel }}</view>
@@ -26,7 +24,7 @@
       </view>
 
       <view v-if="data.rankingCards.length" class="metric-grid">
-        <view v-for="item in data.rankingCards" :key="item.label" class="metric-card">
+        <view v-for="item in data.rankingCards" :key="item.label" class="metric-card light-card">
           <view class="metric-label">{{ item.label }}</view>
           <view class="metric-value">{{ item.value }}<text class="metric-suffix">{{ item.suffix }}</text></view>
         </view>
@@ -44,7 +42,7 @@
             <view class="bar-track"><view class="bar-fill self" :style="{ width: `${metric.selfScore}%` }"></view></view>
           </view>
           <view class="bar-group">
-            <view class="bar-meta"><text class="dot cluster"></text>群体 {{ metric.clusterScore }}</view>
+            <view class="bar-meta"><text class="dot cluster"></text>同类群体 {{ metric.clusterScore }}</view>
             <view class="bar-track"><view class="bar-fill cluster" :style="{ width: `${metric.clusterScore}%` }"></view></view>
           </view>
           <view class="bar-group">
@@ -101,26 +99,39 @@ async function loadData() {
 </script>
 
 <style scoped>
-.hero-eyebrow {
+.compare-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
   font-size: 22rpx;
   font-weight: 700;
-  opacity: 0.92;
+  color: #4a6b91;
   margin-bottom: 8rpx;
 }
 
-.hero-copy,
-.section-copy {
-  font-size: 24rpx;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
 }
 
-.section-copy {
-  color: #475569;
+.hero-desc {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #526b88;
 }
 
 .top-gap {
   margin-top: 14rpx;
+}
+
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
 }
 
 .metric-suffix {
@@ -130,7 +141,7 @@ async function loadData() {
 
 .compare-row {
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .compare-row:last-child {
@@ -216,9 +227,9 @@ async function loadData() {
 .trait-item,
 .explain-item {
   padding: 18rpx 20rpx;
-  border-radius: 20rpx;
+  border-radius: 22rpx;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 2rpx solid rgba(148, 163, 184, 0.12);
+  border: 1rpx solid rgba(177, 201, 227, 0.22);
 }
 
 .explain-item {
@@ -239,5 +250,11 @@ async function loadData() {
   font-size: 22rpx;
   font-weight: 800;
   flex-shrink: 0;
+}
+
+.section-copy {
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #475569;
 }
 </style>

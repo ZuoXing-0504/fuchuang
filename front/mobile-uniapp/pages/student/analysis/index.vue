@@ -1,5 +1,14 @@
 <template>
   <view class="page-wrap">
+    <view class="hero-card analysis-hero">
+      <view class="hero-orb"></view>
+      <view class="hero-eyebrow">知行雷达全样本分析</view>
+      <view class="card-title">分析图集</view>
+      <view class="hero-copy">
+        用更轻量的移动端方式查看全样本分析图。每张图都保留标题、结论与解读入口，适合快速浏览整体趋势。
+      </view>
+    </view>
+
     <view v-if="loading" class="status-card loading">
       <view class="status-title">正在加载</view>
       <view class="helper-text">正在同步全样本分析图表...</view>
@@ -12,18 +21,13 @@
     </view>
 
     <template v-else-if="data">
-      <view class="hero-card">
-        <view class="card-title">全样本分析</view>
-        <view class="hero-copy">这里展示的是系统对全体学生样本做出的图表分析结果，用于理解整体分布、群体差异和关键关联。</view>
-      </view>
-
       <view class="metric-grid">
         <view class="metric-card">
-          <view class="metric-label">分析图数量</view>
+          <view class="metric-label">图表总数</view>
           <view class="metric-value">{{ data.analysisCharts.length }}</view>
         </view>
         <view class="metric-card">
-          <view class="metric-label">已就绪图表</view>
+          <view class="metric-label">可查看图表</view>
           <view class="metric-value">{{ data.chartStatus.availableCount }}</view>
         </view>
         <view class="metric-card">
@@ -32,7 +36,7 @@
         </view>
         <view class="metric-card">
           <view class="metric-label">图表状态</view>
-          <view class="metric-value small">{{ data.chartStatus.ready ? '已准备' : '待补齐' }}</view>
+          <view class="metric-value small">{{ data.chartStatus.ready ? '已就绪' : '待补齐' }}</view>
         </view>
       </view>
 
@@ -43,37 +47,64 @@
 
       <view v-if="!data.chartStatus.ready" class="status-card empty">
         <view class="status-title">图表尚未全部就绪</view>
-        <view class="helper-text">{{ data.chartStatus.message || '请先确认图表生成环境是否完整。' }}</view>
+        <view class="helper-text">{{ data.chartStatus.message || '请先确认图表文件与后端导出链路是否完整。' }}</view>
       </view>
 
       <view v-else class="chart-grid">
-        <view v-for="chart in data.analysisCharts" :key="chart.title" class="panel-card chart-card" @click="openChart(chart)">
+        <view
+          v-for="chart in data.analysisCharts"
+          :key="chart.title"
+          class="panel-card chart-card"
+          @click="openChart(chart)"
+        >
           <image :src="chartUrl(chart.url)" mode="aspectFit" class="chart-image" />
-          <view class="chart-title">{{ chart.title }}</view>
-          <view class="muted">{{ chart.description || chart.category }}</view>
-          <view class="chart-insight">{{ chart.insight }}</view>
+          <view class="chart-body">
+            <view class="chart-title">{{ chart.title }}</view>
+            <view class="muted chart-copy">{{ chart.description || chart.category }}</view>
+            <view class="chart-insight">{{ chart.insight }}</view>
+          </view>
         </view>
       </view>
     </template>
 
     <view v-if="activeChart" class="drawer-mask" @click="closeChart">
       <view class="drawer-panel" @click.stop>
-        <view class="drawer-title">{{ activeChart.title }}</view>
-        <image :src="chartUrl(activeChart.url)" mode="aspectFit" class="drawer-image" />
-        <view class="panel-card drawer-info">
-          <view class="sub-title">横轴</view>
-          <view class="section-copy">{{ chartDetail.xAxis }}</view>
-          <view class="sub-title top-gap">纵轴</view>
-          <view class="section-copy">{{ chartDetail.yAxis }}</view>
-          <view class="sub-title top-gap">图表用途</view>
-          <view class="section-copy">{{ chartDetail.use }}</view>
-          <view class="sub-title top-gap">适用场景</view>
-          <view class="section-copy">{{ chartDetail.scene }}</view>
-          <view class="sub-title top-gap">怎么看这张图</view>
-          <view class="section-copy">{{ chartDetail.guide }}</view>
-          <view class="sub-title top-gap">系统结论</view>
-          <view class="section-copy">{{ activeChart.insight }}</view>
+        <view class="drawer-head">
+          <view>
+            <view class="drawer-title">{{ activeChart.title }}</view>
+            <view class="muted">点击空白区域可关闭</view>
+          </view>
         </view>
+
+        <image :src="chartUrl(activeChart.url)" mode="aspectFit" class="drawer-image" />
+
+        <view class="panel-card drawer-info">
+          <view class="detail-block">
+            <view class="sub-title">横轴</view>
+            <view class="section-copy">{{ chartDetail.xAxis }}</view>
+          </view>
+          <view class="detail-block">
+            <view class="sub-title">纵轴</view>
+            <view class="section-copy">{{ chartDetail.yAxis }}</view>
+          </view>
+          <view class="detail-block">
+            <view class="sub-title">图表用途</view>
+            <view class="section-copy">{{ chartDetail.use }}</view>
+          </view>
+          <view class="detail-block">
+            <view class="sub-title">适用场景</view>
+            <view class="section-copy">{{ chartDetail.scene }}</view>
+          </view>
+          <view class="detail-block">
+            <view class="sub-title">解读方式</view>
+            <view class="section-copy">{{ chartDetail.guide }}</view>
+          </view>
+          <view class="detail-block">
+            <view class="sub-title">系统结论</view>
+            <view class="section-copy">{{ activeChart.insight }}</view>
+          </view>
+        </view>
+
         <button class="primary-btn" @click="closeChart">关闭</button>
       </view>
     </view>
@@ -121,15 +152,40 @@ function closeChart() {
 </script>
 
 <style scoped>
-.hero-copy,
-.section-copy {
-  font-size: 24rpx;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+.analysis-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(194, 236, 255, 0.8), transparent 22%),
+    linear-gradient(180deg, rgba(139, 202, 255, 0.78) 0%, rgba(213, 240, 255, 0.72) 54%, rgba(247, 251, 255, 0.84) 100%);
+  color: #14233b;
 }
 
-.section-copy {
-  color: #223127;
+.hero-orb {
+  position: absolute;
+  right: -24rpx;
+  top: -40rpx;
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.76), rgba(137, 211, 255, 0.16) 62%, transparent 72%);
+}
+
+.hero-eyebrow {
+  position: relative;
+  z-index: 1;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4b6b92;
+  margin-bottom: 8rpx;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #4f6784;
 }
 
 .metric-value.small {
@@ -137,9 +193,9 @@ function closeChart() {
 }
 
 .chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
 }
 
 .chart-card {
@@ -149,28 +205,29 @@ function closeChart() {
 
 .chart-image {
   width: 100%;
-  height: 280rpx;
-  background: #f8fafc;
+  height: 320rpx;
+  background: #f8fbff;
 }
 
-.chart-title,
-.chart-insight {
-  padding: 0 22rpx;
+.chart-body {
+  padding: 22rpx;
 }
 
 .chart-title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #1a2e1f;
-  margin-top: 18rpx;
+  color: #13223a;
+}
+
+.chart-copy {
+  margin-top: 10rpx;
 }
 
 .chart-insight {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: #2d7a4f;
-  padding-bottom: 22rpx;
-  margin-top: 10rpx;
+  color: #0f6dff;
 }
 
 .drawer-mask {
@@ -185,7 +242,7 @@ function closeChart() {
 .drawer-panel {
   width: 100%;
   max-height: 88vh;
-  background: #f5f6f1;
+  background: linear-gradient(180deg, #f5f8fc 0%, #eef4fb 100%);
   border-radius: 32rpx 32rpx 0 0;
   padding: 24rpx;
   display: flex;
@@ -193,11 +250,18 @@ function closeChart() {
   gap: 18rpx;
 }
 
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
 .drawer-title,
 .sub-title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #0f172a;
 }
 
 .drawer-image {
@@ -211,7 +275,16 @@ function closeChart() {
   padding: 22rpx;
 }
 
-.top-gap {
-  margin-top: 16rpx;
+.section-copy {
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #334155;
+  margin-top: 8rpx;
+}
+
+.detail-block + .detail-block {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 </style>

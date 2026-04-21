@@ -1,8 +1,14 @@
 <template>
   <view class="page-wrap admin-page">
+    <view class="hero-card tasks-hero">
+      <view class="hero-caption">知行雷达管理端</view>
+      <view class="hero-title">干预工作台</view>
+      <view class="hero-desc">这里可以查看批量任务历史，也可以手动触发一次批量预测。</view>
+    </view>
+
     <view class="panel-card">
-      <view class="card-title">干预工作台</view>
-      <view class="helper-text">这里可以查看批量任务历史，也可以手动触发一次批量预测。</view>
+      <view class="card-title">批量预测</view>
+      <view class="helper-text">输入待预测文件名后，系统会创建一条批量任务记录。</view>
       <input v-model="fileName" class="field-input top-gap" placeholder="请输入待预测文件名，例如 sample.csv" />
       <view class="action-row top-gap">
         <button class="primary-btn flex-btn" :disabled="submitting" @click="createTask">
@@ -97,6 +103,33 @@ async function createTask() {
   padding-bottom: 0;
 }
 
+.tasks-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4a6b91;
+  margin-bottom: 8rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #526b88;
+}
+
 .top-gap {
   margin-top: 16rpx;
 }
@@ -112,7 +145,7 @@ async function createTask() {
 
 .task-card {
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .task-card:last-child {

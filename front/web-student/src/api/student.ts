@@ -2,6 +2,21 @@ import type { StudentCompareData, StudentHomeData, StudentPredictionResult, Stud
 import { adaptRecommendationGroups, adaptStudentCompare, adaptStudentHome, adaptStudentPredictionResult, adaptStudentPredictionSchema, adaptStudentProfile, adaptStudentReport, unwrapPayload } from './adapter';
 import { request } from '../utils/request';
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export function sendChatMessage(message: string, history: ChatMessage[] = []) {
+  return request<{ response: string }>('/api/student/chat', {
+    options: {
+      method: 'POST',
+      body: JSON.stringify({ message, history })
+    },
+    adapter: (raw) => unwrapPayload(raw) as { response: string }
+  });
+}
+
 export function getStudentHome() {
   return request<StudentHomeData>('/api/student/dashboard', {
     adapter: (raw) => {

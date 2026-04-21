@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { getAnalysisResults, getWarnings } from '../../api/admin';
-import type { AnalysisResultsData, StudentMetrics } from '../../types';
+import { getAnalysisResults, getDashboardOverview, getWarnings } from '../../api/admin';
+import type { AnalysisResultsData, DashboardOverview, StudentMetrics } from '../../types';
 
 type QuickEntry = {
   key: string;
@@ -18,6 +18,7 @@ const router = useRouter();
 const loading = ref(true);
 const students = ref<StudentMetrics[]>([]);
 const analysisData = ref<AnalysisResultsData>();
+const overviewData = ref<DashboardOverview>();
 const activeEntry = ref<QuickEntry | null>(null);
 const drawerVisible = ref(false);
 
@@ -30,9 +31,10 @@ const riskPalette: Record<string, string> = {
 onMounted(async () => {
   loading.value = true;
   try {
-    const [warningRows, analysis] = await Promise.all([getWarnings(), getAnalysisResults()]);
+    const [warningRows, analysis, overview] = await Promise.all([getWarnings(), getAnalysisResults(), getDashboardOverview()]);
     students.value = warningRows;
     analysisData.value = analysis;
+    overviewData.value = overview;
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '后台数据加载失败');
   } finally {
@@ -146,12 +148,21 @@ const entryDetails = computed(() => {
   }));
 });
 
-const spotlightCards = computed(() => [
-  { label: '样本总量', value: stats.value.total, note: '真实学生记录' },
-  { label: '高风险学生', value: stats.value.highRisk, note: '优先干预对象' },
-  { label: '中风险学生', value: stats.value.mediumRisk, note: '建议持续跟踪' },
-  { label: '注册覆盖', value: `${stats.value.registerRate}%`, note: `${stats.value.registered} 个已注册账号` }
-]);
+const spotlightCards = computed(() => {
+  if (overviewData.value?.kpis?.length) {
+    return overviewData.value.kpis.map((item) => ({
+      label: item.label,
+      value: item.value,
+      note: item.note || item.delta
+    }));
+  }
+  return [
+    { label: '样本总量', value: stats.value.total, note: '真实学生记录' },
+    { label: '高风险学生', value: stats.value.highRisk, note: '优先干预对象' },
+    { label: '中风险学生', value: stats.value.mediumRisk, note: '建议持续跟踪' },
+    { label: '注册覆盖', value: `${stats.value.registerRate}%`, note: `${stats.value.registered} 个已注册账号` }
+  ];
+});
 
 function chartUrl(url: string) {
   return url.startsWith('http') ? url : `http://127.0.0.1:5000${url}`;

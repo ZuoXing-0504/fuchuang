@@ -12,10 +12,12 @@
     </view>
 
     <template v-else-if="profile">
-      <view class="hero-card">
-        <view class="card-title">{{ profile.profileCategory }}</view>
-        <view v-if="profile.profileSubtype" class="hero-copy">{{ profile.profileSubtype }}</view>
-        <view class="hero-copy">{{ categoryExplanation || profile.profileExplanation || profile.description }}</view>
+      <view class="hero-card profile-hero">
+        <view class="hero-glow"></view>
+        <view class="hero-caption">知行雷达 · 我的画像</view>
+        <view class="hero-title">{{ profile.profileCategory }}</view>
+        <view v-if="profile.profileSubtype" class="hero-subtitle">{{ profile.profileSubtype }}</view>
+        <view class="hero-desc">{{ categoryExplanation || profile.profileExplanation || profile.description }}</view>
       </view>
 
       <view v-if="subtypeExplanation" class="panel-card">
@@ -24,27 +26,39 @@
       </view>
 
       <view class="metric-grid">
-        <view class="metric-card">
-          <view class="metric-label">风险等级</view>
+        <view class="metric-card light-card">
+          <view class="metric-meta">
+            <view class="metric-mark blue">险</view>
+            <view class="metric-label">风险等级</view>
+          </view>
           <view class="metric-value">{{ profile.riskLevel }}</view>
         </view>
-        <view class="metric-card">
-          <view class="metric-label">健康水平</view>
+        <view class="metric-card light-card">
+          <view class="metric-meta">
+            <view class="metric-mark cyan">健</view>
+            <view class="metric-label">健康水平</view>
+          </view>
           <view class="metric-value">{{ profile.healthLevel }}</view>
         </view>
-        <view class="metric-card">
-          <view class="metric-label">奖学金概率</view>
+        <view class="metric-card light-card">
+          <view class="metric-meta">
+            <view class="metric-mark deep">奖</view>
+            <view class="metric-label">奖学金概率</view>
+          </view>
           <view class="metric-value">{{ percentText(profile.scholarshipProbability) }}</view>
         </view>
-        <view class="metric-card">
-          <view class="metric-label">群体标签数</view>
+        <view class="metric-card light-card">
+          <view class="metric-meta">
+            <view class="metric-mark slate">签</view>
+            <view class="metric-label">画像标签数</view>
+          </view>
           <view class="metric-value">{{ profile.profileHighlights.length }}</view>
         </view>
       </view>
 
       <view v-if="profile.profileHighlights.length" class="panel-card">
         <view class="card-title">画像亮点</view>
-        <view class="chip-row">
+        <view class="chip-row top-gap">
           <view v-for="item in profile.profileHighlights" :key="item" class="tag-chip">{{ item }}</view>
         </view>
       </view>
@@ -52,9 +66,11 @@
       <view v-if="compare && compare.rankingCards.length" class="panel-card">
         <view class="card-title">群体位次</view>
         <view class="metric-grid">
-          <view v-for="item in compare.rankingCards" :key="item.label" class="metric-card">
+          <view v-for="item in compare.rankingCards" :key="item.label" class="metric-card light-card">
             <view class="metric-label">{{ item.label }}</view>
-            <view class="metric-value">{{ item.value }}<text class="metric-suffix">{{ item.suffix }}</text></view>
+            <view class="metric-value">
+              {{ item.value }}<text class="metric-suffix">{{ item.suffix }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -96,7 +112,7 @@
             <view class="priority-chip">{{ item.priority }}</view>
           </view>
           <view class="section-copy">{{ item.description }}</view>
-          <view v-if="item.reason" class="helper-text">{{ item.reason }}</view>
+          <view v-if="item.reason" class="helper-text top-gap-sm">{{ item.reason }}</view>
         </view>
       </view>
 
@@ -155,10 +171,96 @@ function percentText(value) {
 </script>
 
 <style scoped>
-.hero-copy {
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 16%, rgba(202, 241, 255, 0.72), transparent 18%),
+    linear-gradient(180deg, rgba(147, 214, 255, 0.76) 0%, rgba(218, 241, 255, 0.72) 52%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-glow {
+  position: absolute;
+  top: -40rpx;
+  right: -12rpx;
+  width: 210rpx;
+  height: 210rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.76), rgba(128, 215, 255, 0.12) 62%, transparent 72%);
+}
+
+.hero-caption {
+  position: relative;
+  z-index: 1;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4a6b91;
+  margin-bottom: 8rpx;
+}
+
+.hero-title {
+  position: relative;
+  z-index: 1;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-subtitle {
+  position: relative;
+  z-index: 1;
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #47627f;
+}
+
+.hero-desc {
+  position: relative;
+  z-index: 1;
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #526b88;
+}
+
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
+}
+
+.metric-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.metric-mark {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.metric-mark.blue {
+  background: linear-gradient(135deg, #0f6dff, #53b2ff);
+}
+
+.metric-mark.cyan {
+  background: linear-gradient(135deg, #11a4bf, #5ac9ef);
+}
+
+.metric-mark.deep {
+  background: linear-gradient(135deg, #2563eb, #315efb);
+}
+
+.metric-mark.slate {
+  background: linear-gradient(135deg, #42566f, #71859c);
 }
 
 .metric-suffix {
@@ -169,12 +271,16 @@ function percentText(value) {
 .sub-title {
   font-size: 26rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #1b2533;
   margin-bottom: 12rpx;
 }
 
 .top-gap {
   margin-top: 18rpx;
+}
+
+.top-gap-sm {
+  margin-top: 10rpx;
 }
 
 .tag-chip.success {
@@ -190,7 +296,7 @@ function percentText(value) {
 .radar-item,
 .driver-card {
   padding: 18rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .radar-item:last-child,
@@ -224,14 +330,14 @@ function percentText(value) {
 
 .bar-track {
   height: 12rpx;
-  background: #e5efe6;
+  background: #e7eef7;
   border-radius: 999rpx;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(135deg, #2d7a4f, #3b9464);
+  background: linear-gradient(135deg, #0f6dff, #57b8ff);
   border-radius: 999rpx;
 }
 

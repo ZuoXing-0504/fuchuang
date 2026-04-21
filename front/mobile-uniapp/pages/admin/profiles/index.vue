@@ -1,13 +1,13 @@
 <template>
   <view class="page-wrap admin-page">
-    <view class="hero-card">
-      <view class="hero-eyebrow">知行雷达对比中心</view>
-      <view class="card-title">学院 / 专业对比</view>
-      <view class="hero-copy">和 web 管理端保持同一口径，按真实名单聚合学院与专业，查看风险比例、注册覆盖率、主导画像和主导细分。</view>
+    <view class="hero-card profiles-hero">
+      <view class="hero-caption">知行雷达对比中心</view>
+      <view class="hero-title">学院 / 专业对比</view>
+      <view class="hero-desc">和 web 管理端保持同一口径，按真实名单聚合学院与专业，查看高风险率、注册覆盖率和主导画像。</view>
     </view>
 
     <view class="metric-grid">
-      <view v-for="item in summaryCards" :key="item.label" class="metric-card">
+      <view v-for="item in summaryCards" :key="item.label" class="metric-card light-card">
         <view class="metric-label">{{ item.label }}</view>
         <view class="metric-value">{{ item.value }}</view>
         <view class="muted">{{ item.note }}</view>
@@ -81,19 +81,19 @@
       <view v-if="currentAggregate" class="panel-card">
         <view class="card-title">分组详情</view>
         <view class="detail-grid top-gap">
-          <view class="metric-card">
+          <view class="metric-card light-card">
             <view class="metric-label">当前分组</view>
             <view class="metric-value">{{ currentAggregate.label }}</view>
           </view>
-          <view class="metric-card">
+          <view class="metric-card light-card">
             <view class="metric-label">高风险率</view>
             <view class="metric-value">{{ currentAggregate.riskRate }}%</view>
           </view>
-          <view class="metric-card">
+          <view class="metric-card light-card">
             <view class="metric-label">注册覆盖</view>
             <view class="metric-value">{{ currentAggregate.registeredRate }}%</view>
           </view>
-          <view class="metric-card">
+          <view class="metric-card light-card">
             <view class="metric-label">综合发展均值</view>
             <view class="metric-value">{{ currentAggregate.avgScore }}</view>
           </view>
@@ -147,13 +147,13 @@ const activeDimension = ref('college');
 const currentAggregate = ref(null);
 
 const summaryCards = computed(() => {
-  const collegeRows = buildAggregate(rows.value, 'college');
-  const majorRows = buildAggregate(rows.value, 'major');
-  const activeRows = activeDimension.value === 'major' ? majorRows : collegeRows;
+  const collegeGroups = buildAggregate(rows.value, 'college');
+  const majorGroups = buildAggregate(rows.value, 'major');
+  const activeGroups = activeDimension.value === 'major' ? majorGroups : collegeGroups;
   return [
-    { label: '学院分组', value: collegeRows.length, note: '真实学院字段聚合' },
-    { label: '专业分组', value: majorRows.length, note: '真实专业字段聚合' },
-    { label: '最高风险分组', value: (activeRows[0] && activeRows[0].label) || '暂无', note: `${(activeRows[0] && activeRows[0].riskRate) || 0}% 高风险率` },
+    { label: '学院分组', value: collegeGroups.length, note: '真实学院字段聚合' },
+    { label: '专业分组', value: majorGroups.length, note: '真实专业字段聚合' },
+    { label: '最高风险分组', value: (activeGroups[0] && activeGroups[0].label) || '暂无', note: `${(activeGroups[0] && activeGroups[0].riskRate) || 0}% 高风险率` },
     { label: '当前视图', value: activeDimension.value === 'college' ? '学院' : '专业', note: '点击卡片查看分组详情' }
   ];
 });
@@ -164,9 +164,7 @@ const majorRows = computed(() => buildAggregate(rows.value, 'major'));
 const activeRows = computed(() => {
   const base = activeDimension.value === 'major' ? majorRows.value : collegeRows.value;
   const text = keyword.value.trim().toLowerCase();
-  if (!text) {
-    return base;
-  }
+  if (!text) return base;
   return base.filter((item) =>
     [item.label, item.dominantProfile, item.dominantSubtype]
       .map((value) => String(value || '').toLowerCase())
@@ -185,7 +183,7 @@ async function loadData() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await getWarnings({ page: 1, pageSize: 500 });
+    const result = await getWarnings({ page: 1, pageSize: 5000 });
     rows.value = result.list || [];
     if (!currentAggregate.value && rows.value.length) {
       currentAggregate.value = buildAggregate(rows.value, activeDimension.value)[0] || null;
@@ -201,9 +199,7 @@ function buildAggregate(source, key) {
   const counters = {};
   source.forEach((item) => {
     const label = String(item && item[key] ? item[key] : '').trim();
-    if (!label) {
-      return;
-    }
+    if (!label) return;
     if (!counters[label]) {
       counters[label] = {
         label,
@@ -275,17 +271,35 @@ function openDetail(studentId) {
   padding-bottom: 0;
 }
 
-.hero-eyebrow {
+.profiles-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
   font-size: 22rpx;
   font-weight: 700;
-  opacity: 0.9;
+  color: #4a6b91;
   margin-bottom: 8rpx;
 }
 
-.hero-copy {
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #526b88;
+}
+
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
 }
 
 .top-gap {
@@ -300,19 +314,19 @@ function openDetail(studentId) {
 
 .tab-btn {
   height: 80rpx;
-  border-radius: 18rpx;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 26rpx;
   font-weight: 700;
   color: #64748b;
-  background: #f8fbff;
-  border: 2rpx solid #dbe7f6;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2rpx solid rgba(198, 215, 236, 0.86);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #1677ff, #5aa9ff);
+  background: linear-gradient(135deg, #0f6dff, #4eb4ff);
   color: #ffffff;
   border-color: transparent;
 }
@@ -340,7 +354,7 @@ function openDetail(studentId) {
 .spotlight-card,
 .student-card {
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .aggregate-card:last-child,
@@ -350,7 +364,7 @@ function openDetail(studentId) {
 }
 
 .aggregate-card.active {
-  background: linear-gradient(180deg, rgba(239, 246, 255, 0.7), rgba(255, 255, 255, 0));
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.78), rgba(255, 255, 255, 0));
 }
 
 .spotlight-card,
@@ -365,7 +379,7 @@ function openDetail(studentId) {
   justify-content: space-between;
   gap: 20rpx;
   padding: 14rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {

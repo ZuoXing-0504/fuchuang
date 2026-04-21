@@ -12,7 +12,9 @@
     </view>
 
     <template v-else-if="detail">
-      <view class="hero-card">
+      <view class="hero-card report-hero">
+        <view class="hero-orb"></view>
+        <view class="hero-eyebrow">完整报告</view>
         <view class="card-title">{{ detail.reportTitle }}</view>
         <view class="hero-copy">{{ detail.reportSummary }}</view>
       </view>
@@ -99,15 +101,46 @@ async function loadData() {
 </script>
 
 <style scoped>
-.hero-copy,
-.section-copy {
+.report-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 18%, rgba(199, 236, 255, 0.82), transparent 22%),
+    linear-gradient(180deg, rgba(135, 198, 255, 0.78) 0%, rgba(214, 240, 255, 0.72) 52%, rgba(246, 251, 255, 0.84) 100%);
+  color: #14233b;
+}
+
+.hero-orb {
+  position: absolute;
+  right: -18rpx;
+  top: -40rpx;
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.76), rgba(122, 210, 255, 0.16) 62%, transparent 72%);
+}
+
+.hero-eyebrow {
+  position: relative;
+  z-index: 1;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4b6b92;
+  margin-bottom: 8rpx;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #4f6784;
 }
 
 .section-copy {
-  color: #223127;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #334155;
 }
 
 .top-gap {
@@ -117,14 +150,14 @@ async function loadData() {
 .sub-title {
   font-size: 26rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #13223a;
   margin-bottom: 10rpx;
 }
 
 .result-section + .result-section {
   margin-top: 20rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #eef1eb;
+  border-top: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row {
@@ -132,7 +165,7 @@ async function loadData() {
   justify-content: space-between;
   gap: 20rpx;
   padding: 14rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {
@@ -141,13 +174,13 @@ async function loadData() {
 
 .detail-label {
   font-size: 24rpx;
-  color: #68756d;
+  color: #738399;
 }
 
 .detail-value {
   font-size: 26rpx;
   font-weight: 700;
-  color: #223127;
+  color: #13223a;
   text-align: right;
 }
 </style>

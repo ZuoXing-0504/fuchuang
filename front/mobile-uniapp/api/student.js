@@ -6,7 +6,8 @@ import {
   adaptStudentPredictionSchema,
   adaptStudentProfile,
   adaptStudentReport,
-  adaptStudentTrends
+  adaptStudentTrends,
+  unwrapPayload
 } from './adapter';
 import { request } from '../common/request';
 
@@ -51,4 +52,15 @@ export async function submitStudentManualPredict(values) {
     data: { values }
   });
   return adaptStudentPredictionResult(response);
+}
+
+export async function sendStudentChatMessage(message, history = []) {
+  const response = await request('/api/student/chat', {
+    method: 'POST',
+    data: { message, history }
+  });
+  const payload = unwrapPayload(response) || {};
+  return {
+    response: payload.response || ''
+  };
 }

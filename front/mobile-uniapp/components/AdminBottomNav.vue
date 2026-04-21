@@ -28,8 +28,8 @@ const props = defineProps({
 const items = [
   { key: 'home', label: '总览', glyph: '⌂', url: '/pages/admin/home/index' },
   { key: 'warnings', label: '风险', glyph: '!', url: '/pages/admin/warnings/index' },
-  { key: 'profiles', label: '对比', glyph: '▥', url: '/pages/admin/profiles/index' },
-  { key: 'models', label: '预测', glyph: '✦', url: '/pages/admin/models/index' },
+  { key: 'profiles', label: '对比', glyph: '≋', url: '/pages/admin/profiles/index' },
+  { key: 'models', label: '预测', glyph: '↗', url: '/pages/admin/models/index' },
   { key: 'settings', label: '设置', glyph: '⚙', url: '/pages/admin/settings/index' }
 ];
 
@@ -54,7 +54,7 @@ function go(item) {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12rpx;
-  padding: 14rpx 16rpx calc(14rpx + env(safe-area-inset-bottom));
+  padding: 16rpx 18rpx calc(16rpx + env(safe-area-inset-bottom));
   border-radius: 28rpx 28rpx 0 0;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(18rpx);
@@ -78,8 +78,8 @@ function go(item) {
 }
 
 .admin-nav-icon {
-  width: 52rpx;
-  height: 52rpx;
+  width: 54rpx;
+  height: 54rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,7 +88,7 @@ function go(item) {
 }
 
 .admin-nav-glyph {
-  font-size: 28rpx;
+  font-size: 30rpx;
   line-height: 1;
   font-weight: 800;
 }

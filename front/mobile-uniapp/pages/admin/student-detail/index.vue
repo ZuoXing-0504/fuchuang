@@ -12,10 +12,12 @@
     </view>
 
     <template v-else-if="detail">
-      <view class="hero-card">
+      <view class="hero-card detail-hero">
+        <view class="hero-orb"></view>
+        <view class="hero-eyebrow">单学生详情</view>
         <view class="card-title">{{ detail.name || detail.studentId }}</view>
         <view class="hero-copy">{{ detail.studentId }} · {{ detail.college }} · {{ detail.major }}</view>
-        <view class="chip-row">
+        <view class="chip-row hero-chip-row">
           <view class="chip">{{ detail.riskLevel }}</view>
           <view class="chip">{{ detail.profileCategory }}</view>
           <view v-if="detail.profileSubtype" class="chip">{{ detail.profileSubtype }}</view>
@@ -70,7 +72,11 @@
         <view v-for="table in detail.featureTables" :key="table.title" class="feature-table">
           <view class="sub-title">{{ table.title }}</view>
           <view v-if="table.description" class="muted">{{ table.description }}</view>
-          <view v-for="row in table.rows.slice(0, 8)" :key="`${table.title}-${row.label}`" class="detail-row">
+          <view
+            v-for="row in table.rows.slice(0, 8)"
+            :key="`${table.title}-${row.label}`"
+            class="detail-row"
+          >
             <text class="detail-label">{{ row.label }}</text>
             <text class="detail-value">{{ row.value }}<text v-if="row.unit">{{ row.unit }}</text></text>
           </view>
@@ -130,19 +136,61 @@ function openReport() {
 </script>
 
 <style scoped>
-.hero-copy,
-.section-copy {
-  font-size: 24rpx;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+.detail-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 16%, rgba(196, 237, 255, 0.82), transparent 22%),
+    linear-gradient(180deg, rgba(140, 201, 255, 0.78) 0%, rgba(214, 240, 255, 0.72) 52%, rgba(247, 251, 255, 0.84) 100%);
+  color: #14233b;
 }
 
-.section-copy {
-  color: #223127;
+.hero-orb {
+  position: absolute;
+  right: -16rpx;
+  top: -40rpx;
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.76), rgba(130, 214, 255, 0.16) 62%, transparent 72%);
+}
+
+.hero-eyebrow {
+  position: relative;
+  z-index: 1;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #4b6b92;
+  margin-bottom: 8rpx;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #4f6784;
+}
+
+.hero-chip-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 18rpx;
+}
+
+.hero-chip-row .chip {
+  background: rgba(255, 255, 255, 0.78);
+  color: #315071;
 }
 
 .metric-value.small {
   font-size: 28rpx;
+}
+
+.section-copy {
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #334155;
 }
 
 .top-gap {
@@ -152,14 +200,14 @@ function openReport() {
 .sub-title {
   font-size: 26rpx;
   font-weight: 800;
-  color: #1a2e1f;
+  color: #13223a;
   margin-bottom: 10rpx;
 }
 
 .feature-table + .feature-table {
   margin-top: 20rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #eef1eb;
+  border-top: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row {
@@ -167,7 +215,7 @@ function openReport() {
   justify-content: space-between;
   gap: 20rpx;
   padding: 14rpx 0;
-  border-bottom: 1rpx solid #eef1eb;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {
@@ -176,13 +224,13 @@ function openReport() {
 
 .detail-label {
   font-size: 24rpx;
-  color: #68756d;
+  color: #738399;
 }
 
 .detail-value {
   font-size: 26rpx;
   font-weight: 700;
-  color: #223127;
+  color: #13223a;
   text-align: right;
 }
 </style>

@@ -1,23 +1,138 @@
 {
   "pages": [
-    { "path": "pages/login/index", "style": { "navigationBarTitleText": "知行雷达" } },
-    { "path": "pages/admin/home/index", "style": { "navigationBarTitleText": "管理总览" } },
-    { "path": "pages/admin/warnings/index", "style": { "navigationBarTitleText": "风险名单" } },
-    { "path": "pages/admin/profiles/index", "style": { "navigationBarTitleText": "院系对比" } },
-    { "path": "pages/admin/tasks/index", "style": { "navigationBarTitleText": "干预工作台" } },
-    { "path": "pages/admin/models/index", "style": { "navigationBarTitleText": "预测模块" } },
-    { "path": "pages/admin/analysis/index", "style": { "navigationBarTitleText": "分析成果" } },
-    { "path": "pages/admin/student-detail/index", "style": { "navigationBarTitleText": "学生详情" } },
-    { "path": "pages/admin/student-report/index", "style": { "navigationBarTitleText": "完整报告" } },
-    { "path": "pages/admin/settings/index", "style": { "navigationBarTitleText": "设置中心" } },
-    { "path": "pages/student/home/index", "style": { "navigationBarTitleText": "首页" } },
-    { "path": "pages/student/profile/index", "style": { "navigationBarTitleText": "成长画像" } },
-    { "path": "pages/student/predict/index", "style": { "navigationBarTitleText": "在线预测" } },
-    { "path": "pages/student/report/index", "style": { "navigationBarTitleText": "个性化报告" } },
-    { "path": "pages/student/settings/index", "style": { "navigationBarTitleText": "设置中心" } },
-    { "path": "pages/student/compare/index", "style": { "navigationBarTitleText": "群体对比" } },
-    { "path": "pages/student/trend/index", "style": { "navigationBarTitleText": "趋势分析" } },
-    { "path": "pages/student/analysis/index", "style": { "navigationBarTitleText": "全样本分析" } }
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "\u77e5\u884c\u96f7\u8fbe",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/home/index",
+      "style": {
+        "navigationBarTitleText": "\u7ba1\u7406\u603b\u89c8",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/warnings/index",
+      "style": {
+        "navigationBarTitleText": "\u98ce\u9669\u540d\u5355",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/profiles/index",
+      "style": {
+        "navigationBarTitleText": "\u9662\u7cfb\u5bf9\u6bd4",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/tasks/index",
+      "style": {
+        "navigationBarTitleText": "\u5e72\u9884\u5de5\u4f5c\u53f0",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/models/index",
+      "style": {
+        "navigationBarTitleText": "\u9884\u6d4b\u6a21\u5757",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/analysis/index",
+      "style": {
+        "navigationBarTitleText": "\u5206\u6790\u6210\u679c",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/student-detail/index",
+      "style": {
+        "navigationBarTitleText": "\u5b66\u751f\u8be6\u60c5",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/student-report/index",
+      "style": {
+        "navigationBarTitleText": "\u5b8c\u6574\u62a5\u544a",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/admin/settings/index",
+      "style": {
+        "navigationBarTitleText": "\u8bbe\u7f6e\u4e2d\u5fc3",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/home/index",
+      "style": {
+        "navigationBarTitleText": "\u9996\u9875",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/profile/index",
+      "style": {
+        "navigationBarTitleText": "\u6211\u7684\u753b\u50cf",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/predict/index",
+      "style": {
+        "navigationBarTitleText": "\u5728\u7ebf\u9884\u6d4b",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/report/index",
+      "style": {
+        "navigationBarTitleText": "\u4e2a\u6027\u5316\u62a5\u544a",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/settings/index",
+      "style": {
+        "navigationBarTitleText": "\u8bbe\u7f6e\u4e2d\u5fc3",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/compare/index",
+      "style": {
+        "navigationBarTitleText": "\u7fa4\u4f53\u5bf9\u6bd4",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/chat/index",
+      "style": {
+        "navigationBarTitleText": "\u667a\u80fd\u52a9\u624b",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/trend/index",
+      "style": {
+        "navigationBarTitleText": "\u8d8b\u52bf\u5206\u6790",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    },
+    {
+      "path": "pages/student/analysis/index",
+      "style": {
+        "navigationBarTitleText": "\u5168\u6837\u672c\u5206\u6790",
+        "navigationBarBackgroundColor": "#f4f8ff"
+      }
+    }
   ],
   "tabBar": {
     "color": "#64748b",
@@ -25,16 +140,41 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
-      { "pagePath": "pages/student/home/index", "text": "首页" },
-      { "pagePath": "pages/student/profile/index", "text": "画像" },
-      { "pagePath": "pages/student/predict/index", "text": "预测" },
-      { "pagePath": "pages/student/report/index", "text": "报告" },
-      { "pagePath": "pages/student/settings/index", "text": "设置" }
+      {
+        "pagePath": "pages/student/home/index",
+        "text": "\u9996\u9875",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/student/profile/index",
+        "text": "\u753b\u50cf",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile-active.png"
+      },
+      {
+        "pagePath": "pages/student/predict/index",
+        "text": "\u9884\u6d4b",
+        "iconPath": "static/tabbar/predict.png",
+        "selectedIconPath": "static/tabbar/predict-active.png"
+      },
+      {
+        "pagePath": "pages/student/report/index",
+        "text": "\u62a5\u544a",
+        "iconPath": "static/tabbar/report.png",
+        "selectedIconPath": "static/tabbar/report-active.png"
+      },
+      {
+        "pagePath": "pages/student/settings/index",
+        "text": "\u8bbe\u7f6e",
+        "iconPath": "static/tabbar/settings.png",
+        "selectedIconPath": "static/tabbar/settings-active.png"
+      }
     ]
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#f4f8ff",
     "backgroundColor": "#f5f8fc"
   }
 }

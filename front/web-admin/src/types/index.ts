@@ -43,7 +43,7 @@ export interface StudentMetrics extends StudentBaseInfo {
 }
 
 export interface DashboardOverview {
-  kpis: Array<{ label: string; value: string; delta: string; tone: 'danger' | 'warning' | 'success' | 'primary' }>;
+  kpis: Array<{ label: string; value: string; delta: string; note?: string; tone: 'danger' | 'warning' | 'success' | 'primary' }>;
   riskDistribution: Array<{ name: string; value: number }>;
   performanceDistribution: Array<{ name: string; value: number }>;
   profileDistribution: Array<{ name: string; value: number }>;

@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import BrandRadar from '../../components/BrandRadar.vue';
 import { useStudentAuthStore } from '../../stores/auth';
 
 const router = useRouter();
@@ -62,10 +63,12 @@ function switchMode(nextMode: 'login' | 'register') {
     <section class="brand-panel">
       <div class="brand-grid"></div>
       <div class="brand-copy">
-        <div class="brand-mark">SB</div>
-        <div class="brand-eyebrow">Student Growth Intelligence</div>
-        <h1 class="brand-title">学生行为画像系统</h1>
-        <p class="brand-subtitle">把画像、群体对比、个性化报告和成长建议放在同一个入口里，方便你持续了解自己的状态变化。</p>
+        <div class="brand-mark">
+          <BrandRadar />
+        </div>
+        <div class="brand-eyebrow">知行雷达学生端</div>
+        <h1 class="brand-title">知行雷达</h1>
+        <p class="brand-subtitle">把画像、群体对比、个性化报告、智能助手和成长建议放在同一个入口里，方便你持续了解自己的状态变化。</p>
         <div class="brand-points">
           <div class="point-item">真实学生画像标签与多维指标</div>
           <div class="point-item">群体对比与个性化成长建议</div>
@@ -78,9 +81,9 @@ function switchMode(nextMode: 'login' | 'register') {
       <div class="form-shell panel-card">
         <div class="form-head">
           <div>
-            <div class="form-kicker">Student Portal</div>
+            <div class="form-kicker">知行雷达 Student Portal</div>
             <h2 class="form-title">学生入口</h2>
-            <p class="form-desc">注册账号后即可登录，查看自己的画像、报告和群体对比。</p>
+            <p class="form-desc">注册账号后即可登录，统一查看画像、报告、群体对比、分析成果和智能助手。</p>
           </div>
         </div>
 
@@ -173,15 +176,11 @@ function switchMode(nextMode: 'login' | 'register') {
 }
 
 .brand-mark {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  padding: 8px;
+  border-radius: 26px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  font-weight: 900;
-  letter-spacing: 0.08em;
   margin-bottom: 28px;
 }
 

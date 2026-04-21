@@ -1,13 +1,13 @@
 <template>
-    <view class="page-wrap admin-page">
-    <view class="hero-card">
-      <view class="hero-eyebrow">知行雷达管理端</view>
-      <view class="card-title">设置中心</view>
-      <view class="hero-copy">这里统一管理管理员账号安全、接口地址、提醒方式、数据权限、展示偏好和帮助说明，让手机端和 web 后台保持一致。</view>
+  <view class="page-wrap admin-page">
+    <view class="hero-card settings-hero">
+      <view class="hero-caption">知行雷达管理端</view>
+      <view class="hero-title">设置中心</view>
+      <view class="hero-desc">统一管理管理员账号安全、接口地址、提醒方式、数据权限和展示偏好，让手机端和 web 后台保持一致。</view>
     </view>
 
     <view class="metric-grid">
-      <view v-for="item in statusCards" :key="item.label" class="metric-card">
+      <view v-for="item in statusCards" :key="item.label" class="metric-card light-card">
         <view class="metric-label">{{ item.label }}</view>
         <view class="metric-value small">{{ item.value }}</view>
         <view class="muted">{{ item.note }}</view>
@@ -51,21 +51,25 @@
     <view class="panel-card">
       <view class="card-title">管理入口</view>
       <view class="shortcut-grid">
-        <view class="shortcut-card" @click="openPage('/pages/admin/warnings/index')">
+        <view class="shortcut-card card-blue" @click="openPage('/pages/admin/warnings/index')">
+          <view class="shortcut-badge">险</view>
           <view class="shortcut-title">风险名单</view>
           <view class="muted">查看重点学生并进入详情</view>
         </view>
-        <view class="shortcut-card" @click="openPage('/pages/admin/profiles/index')">
+        <view class="shortcut-card card-violet" @click="openPage('/pages/admin/profiles/index')">
+          <view class="shortcut-badge">比</view>
           <view class="shortcut-title">院系对比</view>
-          <view class="muted">查看风险率和主导画像</view>
+          <view class="muted">查看高风险率和主导画像</view>
         </view>
-        <view class="shortcut-card" @click="openPage('/pages/admin/tasks/index')">
+        <view class="shortcut-card card-green" @click="openPage('/pages/admin/tasks/index')">
+          <view class="shortcut-badge">干</view>
           <view class="shortcut-title">干预工作台</view>
           <view class="muted">查看任务历史与批量预测</view>
         </view>
-        <view class="shortcut-card" @click="openPage('/pages/admin/analysis/index')">
+        <view class="shortcut-card card-amber" @click="openPage('/pages/admin/analysis/index')">
+          <view class="shortcut-badge">析</view>
           <view class="shortcut-title">分析成果</view>
-          <view class="muted">查看图表和详细解释</view>
+          <view class="muted">查看图表和详细解读</view>
         </view>
       </view>
     </view>
@@ -108,16 +112,16 @@ const flags = reactive({
 });
 
 const statusCards = computed(() => [
-  { label: '数据状态', value: '已接入', note: '当前主表和风险名单可读' },
+  { label: '数据状态', value: '已接入', note: '当前主表和风险名单可用' },
   { label: '模型状态', value: '可查看', note: '预测模块和单学生结果可用' },
   { label: '当前账号', value: displayUser.value.username || 'admin001', note: '手机端当前管理员身份' },
   { label: '接口状态', value: apiBase.value ? '已配置' : '未配置', note: '当前手机端访问后端的地址' }
 ]);
 
 const switches = computed(() => [
-  { key: 'riskNotice', label: '风险预警提醒', note: '当高风险名单变化时，在页面中显式提醒。', value: flags.riskNotice },
+  { key: 'riskNotice', label: '风险预警提醒', note: '当高风险名单变化时，在页面中提醒。', value: flags.riskNotice },
   { key: 'reportNotice', label: '报告生成提醒', note: '当完整报告准备完成时给出提示。', value: flags.reportNotice },
-  { key: 'taskNotice', label: '干预任务提醒', note: '当重点学生队列变化时给出提醒。', value: flags.taskNotice },
+  { key: 'taskNotice', label: '干预任务提醒', note: '当重点学生队列变化时给出提示。', value: flags.taskNotice },
   { key: 'showSensitiveFields', label: '显示敏感字段', note: '控制详细行为与成绩字段在手机端的默认可见性。', value: flags.showSensitiveFields }
 ]);
 
@@ -179,17 +183,35 @@ function openPage(url) {
   padding-bottom: 0;
 }
 
-.hero-eyebrow {
+.settings-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
   font-size: 22rpx;
   font-weight: 700;
-  opacity: 0.9;
+  color: #4a6b91;
   margin-bottom: 8rpx;
 }
 
-.hero-copy {
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+  color: #526b88;
+}
+
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
 }
 
 .top-gap {
@@ -205,7 +227,7 @@ function openPage(url) {
   justify-content: space-between;
   gap: 20rpx;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #e8eef7;
+  border-bottom: 1rpx solid rgba(223, 232, 244, 0.92);
 }
 
 .detail-row:last-child {
@@ -239,9 +261,9 @@ function openPage(url) {
 .help-card,
 .shortcut-card {
   padding: 20rpx 22rpx;
-  border-radius: 22rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 2rpx solid rgba(148, 163, 184, 0.12);
+  border-radius: 24rpx;
+  border: 1rpx solid rgba(177, 201, 227, 0.22);
+  box-shadow: 0 14rpx 28rpx rgba(45, 93, 154, 0.04);
 }
 
 .switch-card + .switch-card,
@@ -254,6 +276,7 @@ function openPage(url) {
   justify-content: space-between;
   align-items: center;
   gap: 18rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
 .switch-title,
@@ -268,5 +291,50 @@ function openPage(url) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
+}
+
+.shortcut-badge {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 12rpx;
+}
+
+.card-blue {
+  background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
+}
+
+.card-blue .shortcut-badge {
+  background: linear-gradient(135deg, #0f6dff, #53b2ff);
+}
+
+.card-violet {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f4ff 100%);
+}
+
+.card-violet .shortcut-badge {
+  background: linear-gradient(135deg, #5567ff, #8c91ff);
+}
+
+.card-green {
+  background: linear-gradient(180deg, #ffffff 0%, #eefcf5 100%);
+}
+
+.card-green .shortcut-badge {
+  background: linear-gradient(135deg, #10956c, #45cb9b);
+}
+
+.card-amber {
+  background: linear-gradient(180deg, #ffffff 0%, #fff8ed 100%);
+}
+
+.card-amber .shortcut-badge {
+  background: linear-gradient(135deg, #ec9a1a, #f6c55f);
 }
 </style>

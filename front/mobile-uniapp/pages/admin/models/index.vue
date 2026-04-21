@@ -1,9 +1,9 @@
 <template>
   <view class="page-wrap admin-page">
-    <view class="hero-card">
-      <view class="hero-eyebrow">预测模块</view>
-      <view class="card-title">模型总览</view>
-      <view class="hero-copy">这里统一查看风险、奖学金、综合成绩、健康、趋势、学习投入、综合发展以及四六级等模型任务。</view>
+    <view class="hero-card models-hero">
+      <view class="hero-caption">知行雷达管理端</view>
+      <view class="hero-title">预测模块</view>
+      <view class="hero-desc">统一查看风险、奖学金、综合成绩、健康、趋势、学习投入、综合发展以及四六级等模型任务。</view>
     </view>
 
     <view v-if="loading" class="status-card loading">
@@ -19,7 +19,7 @@
 
     <template v-else>
       <view v-if="summary && summary.overviewCards.length" class="metric-grid">
-        <view v-for="item in summary.overviewCards" :key="item.label" class="metric-card">
+        <view v-for="item in summary.overviewCards" :key="item.label" class="metric-card light-card">
           <view class="metric-label">{{ item.label }}</view>
           <view class="metric-value small">{{ item.value }}</view>
           <view class="muted">{{ item.note }}</view>
@@ -28,7 +28,7 @@
 
       <view class="panel-card">
         <view class="card-title">单学生预测结果入口</view>
-        <input v-model="studentId" class="field-input" placeholder="输入学号后查看该学生的各项预测结果" />
+        <input v-model="studentId" class="field-input top-gap" placeholder="输入学号后查看该学生的各项预测结果" />
         <view class="action-row top-gap">
           <button class="primary-btn flex-btn" :disabled="studentLoading" @click="loadStudentPrediction">
             {{ studentLoading ? '查询中...' : '查看预测结果' }}
@@ -41,7 +41,7 @@
       <view v-if="studentCards.length" class="panel-card">
         <view class="card-title">单学生预测结果</view>
         <view class="result-grid">
-          <view v-for="item in studentCards" :key="item.label" class="result-card">
+          <view v-for="item in studentCards" :key="item.label" class="result-card light-card">
             <view class="metric-label">{{ item.label }}</view>
             <view class="metric-value small">{{ item.value }}</view>
             <view class="muted">{{ item.note }}</view>
@@ -150,22 +150,31 @@ function metricText(value) {
   padding-bottom: 0;
 }
 
-.hero-eyebrow {
+.models-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(197, 240, 255, 0.68), transparent 18%),
+    linear-gradient(180deg, rgba(146, 214, 255, 0.76) 0%, rgba(219, 241, 255, 0.74) 50%, rgba(248, 252, 255, 0.82) 100%);
+  color: #13233b;
+}
+
+.hero-caption {
   font-size: 22rpx;
   font-weight: 700;
-  opacity: 0.9;
+  color: #4a6b91;
   margin-bottom: 8rpx;
 }
 
-.hero-copy,
-.section-copy {
-  font-size: 24rpx;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.92);
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #13233b;
 }
 
-.section-copy {
-  color: #334155;
+.hero-desc {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #526b88;
 }
 
 .top-gap {
@@ -185,18 +194,22 @@ function metricText(value) {
   font-size: 28rpx;
 }
 
+.light-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.92) 100%);
+}
+
 .result-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
 }
 
-.result-card,
 .task-card {
   padding: 22rpx;
-  border-radius: 22rpx;
+  border-radius: 24rpx;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 2rpx solid rgba(148, 163, 184, 0.12);
+  border: 1rpx solid rgba(177, 201, 227, 0.22);
+  box-shadow: 0 14rpx 28rpx rgba(45, 93, 154, 0.04);
 }
 
 .task-card + .task-card {
@@ -219,5 +232,11 @@ function metricText(value) {
   font-size: 24rpx;
   font-weight: 800;
   color: #1677ff;
+}
+
+.section-copy {
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #475569;
 }
 </style>

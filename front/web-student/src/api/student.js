@@ -50,6 +50,19 @@ export function submitStudentManualPredict(values) {
         adapter: adaptStudentPredictionResult
     });
 }
+export function sendChatMessage(message, history = []) {
+    return request('/api/student/chat', {
+        options: { 
+            method: 'POST', 
+            body: JSON.stringify({ message, history }) 
+        },
+        adapter: (raw) => {
+            const payload = unwrapPayload(raw);
+            return payload;
+        }
+    });
+}
+
 function normalizeSecondaryTags(payload) {
     if (!Array.isArray(payload)) {
         return [];
