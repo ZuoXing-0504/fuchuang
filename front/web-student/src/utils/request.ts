@@ -1,7 +1,26 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5000';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 const USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true';
 const STORAGE_KEY = import.meta.env.VITE_AUTH_STORAGE_KEY ?? 'student-behavior-student-auth';
 const REQUEST_TIMEOUT_MS = 15000;
+
+function buildRequestUrl(url: string) {
+  const normalizedBase = String(API_BASE || '').replace(/\/+$/, '');
+  const normalizedPath = String(url || '').replace(/^\/+/, '');
+
+  if (!normalizedBase) {
+    return `/${normalizedPath}`;
+  }
+
+  if (/^https?:\/\//i.test(normalizedPath)) {
+    return normalizedPath;
+  }
+
+  const baseEndsWithApi = normalizedBase.endsWith('/api');
+  const pathStartsWithApi = normalizedPath === 'api' || normalizedPath.startsWith('api/');
+  const finalPath = baseEndsWithApi && pathStartsWithApi ? normalizedPath.slice(4) : normalizedPath;
+
+  return `${normalizedBase}/${finalPath}`.replace(/(?<!:)\/{2,}/g, '/');
+}
 
 export interface RequestOptions<T, R = T> {
   options?: RequestInit;
@@ -21,7 +40,7 @@ export async function request<T, R = T>(url: string, config?: RequestOptions<T, 
     const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
     try {
-      response = await fetch(`${API_BASE}${url}`, {
+      response = await fetch(buildRequestUrl(url), {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

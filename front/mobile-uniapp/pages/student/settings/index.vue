@@ -30,7 +30,7 @@
     <view class="panel-card">
       <view class="card-title">接口与同步</view>
       <view class="helper-text">如果 web 端注册好的账号或画像结果在手机端看不到，请先确认这里仍然指向当前后端，再刷新账号信息。</view>
-      <input v-model="apiBase" class="field-input top-gap" placeholder="请输入接口地址，例如 http://192.168.5.8:5000" />
+      <input v-model="apiBase" class="field-input top-gap" placeholder="请输入接口地址，例如 http://150.158.131.93/api" />
       <view class="detail-row top-gap"><text class="detail-label">默认接口</text><text class="detail-value">{{ defaultApiBase }}</text></view>
       <view class="action-row top-gap">
         <button class="primary-btn flex-btn" @click="saveCurrentApiBase">保存地址</button>

@@ -165,7 +165,7 @@ const spotlightCards = computed(() => {
 });
 
 function chartUrl(url: string) {
-  return url.startsWith('http') ? url : `http://127.0.0.1:5000${url}`;
+  return url;
 }
 
 function percentage(value: number, total: number) {

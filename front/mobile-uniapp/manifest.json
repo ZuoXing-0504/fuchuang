@@ -18,10 +18,10 @@
         "distribute" : {
             "android" : {
                 "icons" : {
-                    "hdpi" : "static/app-icons/android-hdpi.png",
-                    "xhdpi" : "static/app-icons/android-xhdpi.png",
-                    "xxhdpi" : "static/app-icons/android-xxhdpi.png",
-                    "xxxhdpi" : "static/app-icons/android-xxxhdpi.png"
+                    "hdpi" : "static/brand/zhixing-radar-app-icon.png",
+                    "xhdpi" : "static/brand/zhixing-radar-app-icon.png",
+                    "xxhdpi" : "static/brand/zhixing-radar-app-icon.png",
+                    "xxxhdpi" : "static/brand/zhixing-radar-app-icon.png"
                 }
             },
             "ios" : {

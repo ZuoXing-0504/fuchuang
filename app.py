@@ -89,8 +89,17 @@ except ImportError as e:
 app = Flask(__name__)
 app.json.ensure_ascii = False
 
+def _parse_allowed_origins(raw_origins: str):
+    origins = [item.strip() for item in (raw_origins or '').split(',') if item.strip()]
+    return origins or '*'
+
+
 # 启用 CORS
-CORS(app)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": _parse_allowed_origins(os.getenv('ALLOWED_ORIGINS', '*'))}},
+    supports_credentials=False,
+)
 
 
 def _resolve_database_url(raw_url: str) -> str:
@@ -116,9 +125,10 @@ def _resolve_database_url(raw_url: str) -> str:
 database_url = _resolve_database_url(os.getenv('DATABASE_URL', ''))
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'connect_args': {'timeout': 15}
-}
+engine_options = {}
+if str(database_url).startswith('sqlite'):
+    engine_options['connect_args'] = {'timeout': 15}
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 
 # 初始化数据库
 db = SQLAlchemy(app)
@@ -140,7 +150,9 @@ def _configure_sqlite_connection(dbapi_connection, connection_record):
 
 EPHEMERAL_TOKEN_CACHE = {}
 ADMIN_METRICS_CACHE = None
+ADMIN_METRICS_CACHE_SIGNATURE = None
 STUDENT_REPORT_CACHE = {}
+STUDENT_REPORT_CACHE_SIGNATURE = None
 RISK_THRESHOLD_CACHE = None
 data_repository = None
 model_outputs_repository = None
@@ -641,6 +653,81 @@ def _load_student_registration_lookup():
     return lookup
 
 
+def _path_signature(path):
+    target = os.fspath(path)
+    try:
+        stats = os.stat(target)
+    except OSError:
+        return None
+    return (int(stats.st_mtime_ns), int(stats.st_size))
+
+
+def _student_account_signature():
+    try:
+        count = UserAccount.query.filter_by(role='student').count()
+        latest = UserAccount.query.filter_by(role='student').order_by(UserAccount.updated_at.desc(), UserAccount.id.desc()).first()
+    except Exception:
+        return None
+    if latest is None:
+        return (int(count), "", 0)
+    updated_at = getattr(latest, 'updated_at', None)
+    return (
+        int(count),
+        updated_at.isoformat() if updated_at is not None else "",
+        int(getattr(latest, 'id', 0) or 0),
+    )
+
+
+def _analysis_source_signature():
+    analysis_path = data_repository.analysis_master_path if data_repository is not None else os.path.join(BASE_DIR, 'our project', 'analysis_master.csv')
+    return (
+        _path_signature(analysis_path),
+        _path_signature(PRIMARY_DB_PATH),
+    )
+
+
+def _current_admin_metrics_signature():
+    return (_analysis_source_signature(), _student_account_signature())
+
+
+def _current_student_report_signature():
+    return (
+        _analysis_source_signature(),
+        _path_signature(TRAIN_FEATURES_PATH),
+    )
+
+
+def _reset_data_repository_cache(*, analysis=False, train_features=False):
+    if data_repository is None:
+        return
+    if analysis and hasattr(data_repository, '_analysis_frame_cache'):
+        data_repository._analysis_frame_cache = None
+    if train_features and hasattr(data_repository, '_train_features_cache'):
+        data_repository._train_features_cache = None
+
+
+def _refresh_runtime_caches_if_needed():
+    global ADMIN_METRICS_CACHE, ADMIN_METRICS_CACHE_SIGNATURE, STUDENT_REPORT_CACHE, STUDENT_REPORT_CACHE_SIGNATURE, TRAIN_FEATURES_CACHE, TRAIN_FEATURES_CACHE_SIGNATURE
+
+    admin_signature = _current_admin_metrics_signature()
+    if ADMIN_METRICS_CACHE_SIGNATURE != admin_signature:
+        ADMIN_METRICS_CACHE = None
+        ADMIN_METRICS_CACHE_SIGNATURE = admin_signature
+        _reset_data_repository_cache(analysis=True)
+
+    train_features_signature = _path_signature(TRAIN_FEATURES_PATH)
+    if TRAIN_FEATURES_CACHE_SIGNATURE != train_features_signature:
+        TRAIN_FEATURES_CACHE = None
+        TRAIN_FEATURES_CACHE_SIGNATURE = train_features_signature
+        _reset_data_repository_cache(train_features=True)
+
+    report_signature = _current_student_report_signature()
+    if STUDENT_REPORT_CACHE_SIGNATURE != report_signature:
+        STUDENT_REPORT_CACHE = {}
+        STUDENT_REPORT_CACHE_SIGNATURE = report_signature
+        _reset_data_repository_cache(analysis=True, train_features=True)
+
+
 def _build_admin_student_metrics_row(row, registration_lookup=None):
     student_id = str(row.get("student_id") or "")
     cluster_label = _cluster_label_from_value(row.get("cluster"))
@@ -684,7 +771,11 @@ def _build_admin_student_metrics_row(row, registration_lookup=None):
 
 
 def _build_admin_student_metrics_list(force_refresh=False):
-    global ADMIN_METRICS_CACHE
+    global ADMIN_METRICS_CACHE, ADMIN_METRICS_CACHE_SIGNATURE
+    current_signature = _current_admin_metrics_signature()
+    if ADMIN_METRICS_CACHE_SIGNATURE != current_signature:
+        ADMIN_METRICS_CACHE = None
+        ADMIN_METRICS_CACHE_SIGNATURE = current_signature
     if ADMIN_METRICS_CACHE is not None and not force_refresh:
         return ADMIN_METRICS_CACHE
     frame = _load_analysis_frame()
@@ -696,6 +787,7 @@ def _build_admin_student_metrics_list(force_refresh=False):
         for item in frame.to_dict(orient="records")
     ]
     ADMIN_METRICS_CACHE = rows
+    ADMIN_METRICS_CACHE_SIGNATURE = current_signature
     return rows
 
 
@@ -739,13 +831,19 @@ def _find_student_row(student_id):
 
 
 def _get_student_report(student_id, *, force_refresh=False):
+    global STUDENT_REPORT_CACHE_SIGNATURE
     cache_key = str(student_id).strip()
     if not cache_key:
         raise ValueError('student_id is required')
+    current_signature = _current_student_report_signature()
+    if STUDENT_REPORT_CACHE_SIGNATURE != current_signature:
+        STUDENT_REPORT_CACHE.clear()
+        STUDENT_REPORT_CACHE_SIGNATURE = current_signature
     if not force_refresh and cache_key in STUDENT_REPORT_CACHE:
         return STUDENT_REPORT_CACHE[cache_key]
     report = generate_report(cache_key)
     STUDENT_REPORT_CACHE[cache_key] = report
+    STUDENT_REPORT_CACHE_SIGNATURE = current_signature
     return report
 
 
@@ -1432,6 +1530,7 @@ STUDENT_FEATURE_COLUMN_CANDIDATES = {
 
 TRAIN_FEATURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'our project', 'train_features_final.csv')
 TRAIN_FEATURES_CACHE = None
+TRAIN_FEATURES_CACHE_SIGNATURE = None
 PREDICTION_FEATURE_SET = set().union(*feature_schema.values()) if model_loaded else set()
 
 FEATURE_UNITS = {
@@ -1649,11 +1748,16 @@ def _normalize_student_id_text(value):
 
 
 def _load_train_features_frame():
-    global TRAIN_FEATURES_CACHE
+    global TRAIN_FEATURES_CACHE, TRAIN_FEATURES_CACHE_SIGNATURE
+    current_signature = _path_signature(TRAIN_FEATURES_PATH)
     if data_repository is not None:
         frame = data_repository.load_train_features_frame()
         TRAIN_FEATURES_CACHE = frame
+        TRAIN_FEATURES_CACHE_SIGNATURE = current_signature
         return frame
+    if TRAIN_FEATURES_CACHE_SIGNATURE != current_signature:
+        TRAIN_FEATURES_CACHE = None
+        TRAIN_FEATURES_CACHE_SIGNATURE = current_signature
     if TRAIN_FEATURES_CACHE is not None:
         return TRAIN_FEATURES_CACHE
     if not os.path.exists(TRAIN_FEATURES_PATH):
@@ -1664,9 +1768,11 @@ def _load_train_features_frame():
         if 'student_id' in frame.columns:
             frame['student_id'] = frame['student_id'].map(_normalize_student_id_text)
         TRAIN_FEATURES_CACHE = frame
+        TRAIN_FEATURES_CACHE_SIGNATURE = current_signature
     except Exception as exc:
         print(f"训练特征主表加载失败: {exc}")
         TRAIN_FEATURES_CACHE = pd.DataFrame()
+        TRAIN_FEATURES_CACHE_SIGNATURE = current_signature
     return TRAIN_FEATURES_CACHE
 
 
@@ -3205,9 +3311,25 @@ def _initialize_runtime_state():
     RUNTIME_INITIALIZED = True
 
 
+@app.get('/healthz')
+@app.get('/api/health')
+def health_check():
+    return jsonify({
+        'code': 200,
+        'message': 'ok',
+        'data': {
+            'status': 'healthy',
+            'database': database_url.split(':', 1)[0],
+            'analysisAvailable': analysis_available,
+            'chartGenerationAvailable': chart_generation_available,
+        },
+    })
+
+
 @app.before_request
 def _bootstrap_runtime():
     _initialize_runtime_state()
+    _refresh_runtime_caches_if_needed()
 
 
 app.register_blueprint(

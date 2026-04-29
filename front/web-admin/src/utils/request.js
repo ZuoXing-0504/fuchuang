@@ -1,6 +1,20 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5000';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 const USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true';
 const STORAGE_KEY = import.meta.env.VITE_AUTH_STORAGE_KEY ?? 'student-behavior-admin-auth';
+function buildRequestUrl(url) {
+    const normalizedBase = String(API_BASE || '').replace(/\/+$/, '');
+    const normalizedPath = String(url || '').replace(/^\/+/, '');
+    if (!normalizedBase) {
+        return `/${normalizedPath}`;
+    }
+    if (/^https?:\/\//i.test(normalizedPath)) {
+        return normalizedPath;
+    }
+    const baseEndsWithApi = normalizedBase.endsWith('/api');
+    const pathStartsWithApi = normalizedPath === 'api' || normalizedPath.startsWith('api/');
+    const finalPath = baseEndsWithApi && pathStartsWithApi ? normalizedPath.slice(4) : normalizedPath;
+    return `${normalizedBase}/${finalPath}`.replace(/(?<!:)\/{2,}/g, '/');
+}
 export async function request(url, config) {
     const { options, fallback, adapter } = config ?? {};
     if (USE_MOCK && fallback) {
@@ -8,7 +22,7 @@ export async function request(url, config) {
     }
     try {
         const token = readToken();
-        const response = await fetch(`${API_BASE}${url}`, {
+        const response = await fetch(buildRequestUrl(url), {
             headers: {
                 'Content-Type': 'application/json',
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),

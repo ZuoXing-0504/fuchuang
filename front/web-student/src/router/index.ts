@@ -1,4 +1,4 @@
-﻿﻿import { createRouter, createWebHashHistory } from 'vue-router';
+﻿﻿﻿﻿import { createRouter, createWebHashHistory } from 'vue-router';
 import StudentLayout from '../layouts/StudentLayout.vue';
 import { useStudentAuthStore } from '../stores/auth';
 import StudentLoginView from '../views/auth/StudentLoginView.vue';

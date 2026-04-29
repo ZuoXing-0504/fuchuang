@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-student_behavior}
+      POSTGRES_USER: ${POSTGRES_USER:-student_behavior}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-student_behavior} -d ${POSTGRES_DB:-student_behavior}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod.backend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; import json; resp=urlopen('http://127.0.0.1:5000/healthz', timeout=5); data=json.loads(resp.read().decode('utf-8')); raise SystemExit(0 if data.get('code') == 200 else 1)\""]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  web-admin:
+    build:
+      context: ./front/web-admin
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE: ${WEB_API_BASE:-/api}
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  web-student:
+    build:
+      context: ./front/web-student
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE: ${WEB_API_BASE:-/api}
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      web-admin:
+        condition: service_started
+      web-student:
+        condition: service_started
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx/site.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  postgres_data:

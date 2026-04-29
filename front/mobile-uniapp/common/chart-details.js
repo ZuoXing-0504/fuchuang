@@ -1,3 +1,5 @@
+import { getApiBase } from './config';
+
 const CHART_DETAIL_MAP = {
   '01': {
     xAxis: '学习时长分组区间',
@@ -61,7 +63,18 @@ export function chartUrl(url) {
   if (!url) {
     return '';
   }
-  return url.startsWith('http') ? url : `http://192.168.5.8:5000${url}`;
+  if (url.startsWith('http')) {
+    return url;
+  }
+  const base = String(getApiBase() || '').replace(/\/+$/, '');
+  const path = String(url).startsWith('/') ? String(url) : `/${String(url)}`;
+  if (!base) {
+    return path;
+  }
+  if (base.endsWith('/api') && path.startsWith('/api/')) {
+    return `${base}${path.slice(4)}`;
+  }
+  return `${base}${path}`;
 }
 
 export function getChartDetail(chart) {

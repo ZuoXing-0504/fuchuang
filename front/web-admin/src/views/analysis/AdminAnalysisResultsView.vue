@@ -31,7 +31,7 @@ const overviewNotes = computed(() => [
 ]);
 
 function chartUrl(url: string) {
-  return url.startsWith('http') ? url : `http://127.0.0.1:5000${url}`;
+  return url;
 }
 
 const chartDetailMap: Record<string, { xAxis: string; yAxis: string; useCase: string; scenario: string; readingGuide: string }> = {

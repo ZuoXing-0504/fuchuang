@@ -22,7 +22,7 @@
             <view class="status-title">连接地址</view>
             <view class="helper-text">手机端登录前也可以先改接口地址。</view>
           </view>
-          <input v-model="apiBase" class="field-input" placeholder="请输入接口地址，例如 http://192.168.1.8:5000" />
+          <input v-model="apiBase" class="field-input" placeholder="请输入接口地址，例如 http://150.158.131.93/api" />
           <view class="helper-text">当前默认地址：{{ defaultApiBase }}</view>
           <view class="network-actions">
             <button class="secondary-btn compact-btn" @click="saveApiBase">保存地址</button>
